@@ -63,11 +63,49 @@ def bn_demo():
     # m = nn.BatchNorm2d(100, affine=False)
     input = torch.randn(20, 100, 35, 45)
     output = m(input)
+    
+def ln_demo():
+    batch, sentence_length, embedding_dim = 20, 5, 10 # 
+    embedding = torch.randn(batch, sentence_length, embedding_dim)
+    layer_norm = nn.LayerNorm(embedding_dim)
+    # Activate module
+    output = layer_norm(embedding)
+    print(output)
+    
+def cat_stack_demo():
+    x = torch.randn(2, 3)
+    output = torch.cat((x, x, x), 0)
+    output2 = torch.cat((x, x, x), 1)
+    
+    a = torch.randn(2,3)
+    b = torch.randn(2,3)
+    c= torch.stack([a,b], dim=1)
+    
+    x = torch.tensor([[1], [2], [3]])
+    x.size()
+    x.expand(3, 4)
+    x.expand(-1, 4)   # -1 means not changing the size of that dimension
+
+def split_demo():
+    a = torch.arange(10).reshape(5, 2)
+    output = torch.split(a, 2)
+    output2 = torch.split(a, [1, 4])
+    print(a)
+
+def embedding_demo():
+    embedding = nn.Embedding(30522, 768, padding_idx=0)
+    input = torch.LongTensor([[0, 2, 0, 5], [3, 5, 6, 20]])
+    output = embedding(input)
+    print(output.shape)
 
 if __name__ == "__main__":
     # conv_demo()
     # transposed_conv_demo()
     # demo_linear()
     # matmul_demo()
-    bn_demo()
+    # bn_demo()
+    # ln_demo()
+    # cat_stack_demo()
+    # split_demo()
+    embedding_demo()
     print("run op_test.py successfully !!!")
