@@ -159,8 +159,13 @@ def attention(query, key, value, mask=None, dropout=None):
 
 **思考：decoder 中需要 padding mask 吗？** <br>
 
-# 9 MQA（Multi Query Attention）
-## 9.1 经典版本
+# 9 加速利器：KV Cache
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;假设 K 和 V 能直接存在缓存中，模型规模小还好，一旦模型规模很大长度很长时，KV 根本就存不进缓存。<br>
+
+[KV Cache 课件链接](https://github.com/Elvin-Ma/ai_papers/blob/main/attention_optimize/kv-cache.md)
+
+# 10 MQA（Multi Query Attention）
+## 10.1 经典版本
 - 背景：<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MQA（Multi Query Attention）最早是出现在2019年谷歌的一篇论文 《Fast Transformer Decoding: One Write-Head is All You Need》，之所以没有被关注到，是因为文本生成类任务还没这么火热，解码序列长度也没有现阶段大模型的要求那么高。<br>
 
@@ -175,33 +180,39 @@ def attention(query, key, value, mask=None, dropout=None):
 
 [MQA 论文](https://arxiv.org/abs/1911.02150)
 
-## 9.2 改进版本
-- 概念
+# 11 改进版本：converting the checkpoint and uptraining
+
+*(**uptraining** 是指对已有的模型进行进一步的训练(pre-train)或微调(fine-tune)。它可以是为了适应新的任务或结构，或者改进模型的性能。在这里， **uptraining** 是指将具有多头注意力的语言模型转换为具有多查询注意力的模型，并通过额外的预训练阶段来适应新的结构。)* <br>
+
+- 概念 <br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在 Multi-Query Attention 方法中只会保留一个单独的key-value头，这样虽然可以提升推理的速度，但是会带来精度上的损失。《Multi-Head Attention:Collaborate Instead of Concatenate 》这篇论文的第一个思路是基于多个 MQA 的 checkpoint 进行 finetuning，来得到了一个质量更高的 MQA 模型。这个过程也被称为 Uptraining。<br>
 
-- 具体步骤： <br>
-1. 对多个 MQA 的 checkpoint 文件进行融合，融合的方法是: 通过对 key 和 value 的 head 头进行 mean pooling 操作，如下图。
-2. 对融合后的模型使用少量数据进行 finetune 训练，重训后的模型大小跟之前一样，但是效果会更好
+从多头模型生成多查询模型分为两个步骤：
+- 首先是转换检查点(checkpoint)，将多头检查点转换为多查询检查点。key和value头的投影矩阵被平均汇总为单个投影矩阵，我们发现这比选择单个键和值头或从头开始随机初始化新的键和值头效果更好。
+- 转换后的检查点接着使用相同的预训练方法进行预训练，但仅进行原始训练步骤的一小部分α。
 
 - 图示：<br>
-![figure20](images/attention-figure22.jpg)
+![figure21](images/gqa-figure1.jpg)
 
 - 论文链接：<br>
 [GQA 论文](https://arxiv.org/pdf/2305.13245.pdf) <br>
-[MQA update](https://arxiv.org/pdf/2006.16362.pdf) <br>
 
-# 10 GQA（Grouped Query Attention）
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Google 在 2023 年发表的一篇 《GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints》的论文，整体论文写的清晰易读。<br>
+# 12 大模型神器：GQA（Grouped Query Attention）
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;分组查询注意力(GQA)将查询头分成G个组，每个组共享一个键头和值头。GQA-G表示具有G个组的分组查询。GQA-1表示单个组，因此具有单个键头和值头，等效于MQA。而GQA-H表示组数等于头数，等效于MHA。下图显示了分组查询注意力和多头/多查询注意力的比较。在将多头检查点转换为GQA检查点时，我们通过对该组内所有原始头进行平均汇总来构建每个组的键头和值头。<br>
+
+![figure22](images/gqa-figure2.jpg)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;中间数量的组导致插值模型，其质量高于MQA但比MHA快，正如我们将展示的那样，这代表了一个有利的权衡。从MHA转换为MQA将H个键和值头减少为单个键和值头，将键值缓存(KV Cache)的大小减小，并且需要加载的数据量减少了H倍。然而，更大的模型通常会按比例增加头的数量，从而多查询注意力在内存带宽和容量上都具有更激进的削减。GQA使我们能够随着模型的增大而保持带宽和容量的相同比例减少。<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;此外，较大的模型相对较少受到注意力的内存带宽开销的影响，因为KV Cache 随着模型维度的增加而扩展，而模型的FLOPs和参数随着模型维度的平方增加。最后，针对大型模型的标准分片将单个键头和值头复制了模型分区的数量（Pope等人，2022）；GQA消除了这种分区的浪费。因此，我们希望GQA在较大的模型中能够达到一个特别好的权衡。<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;值得注意的是，GQA不适用于编码器(encoder)的自注意力层；编码器表示是并行计算的，因此内存带宽通常不是主要瓶颈。<br>
 
 - [GQA 论文](https://arxiv.org/pdf/2305.13245.pdf)
 
-# 11 加速利器：KV Cache
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;假设 K 和 V 能直接存在缓存中，模型规模小还好，一旦模型规模很大长度很长时，KV 根本就存不进缓存。<br>
+# 13 大模型加速利器：FlashAttention: 
 
-# 12 加速利器：FlashAttention: 
 - [FlashAttention 论文链接](https://arxiv.org/abs/2205.14135)
 
-# 13 其它改进方案
+# 14 其它改进方案
 - FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning
 [FlashAttention2 论文链接](https://arxiv.org/pdf/2307.08691.pdf)
 
@@ -209,7 +220,7 @@ def attention(query, key, value, mask=None, dropout=None):
 [参考链接](https://blog.vllm.ai/2023/06/20/vllm.html)
 [page attention 论文链接](https://arxiv.org/abs/2309.06180)
 
-# 14 参考链接
+# 15 参考链接
 - [参考链接](https://towardsdatascience.com/attn-illustrated-attention-5ec4ad276ee3)
 - [书籍 + 代码](https://zh-v2.d2l.ai/chapter_attention-mechanisms/attention-scoring-functions.html)
 - [read paper](https://readpaper.com/paper/2963403868)
