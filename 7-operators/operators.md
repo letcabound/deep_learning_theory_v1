@@ -324,7 +324,7 @@ output = m(input)
 
 # 5 activation functions
 
-- [参考下一课时](../6-activation_functions/activations.md)
+- [参考下一课时](../8-activation_functions/activations.md)
 
 # 6 reshape、 view、 permute、transpose
 ## 6.1 reshape 
