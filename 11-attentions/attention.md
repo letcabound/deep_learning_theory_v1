@@ -64,6 +64,9 @@ $$Attention(Q, K, V)=softmax(\frac{Q K^{T}}{\sqrt{d_{k}}}) V $$
 - 其它 token 对应的输出的计算 <br>
 ![figure9](images/attention-figure9.jpg)
 
+- 真实数据举例
+![figure9](images/attention-figure-eg.jpg)
+
 ### 4.2.4 写成矩阵的形式
 - 矩阵化 Q K V 的获取过程：<br>
 ![figure10](images/attention-figure10.jpg)
