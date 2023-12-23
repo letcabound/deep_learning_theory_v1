@@ -173,7 +173,7 @@ $$o_{t} = W^{oh}s_{t}$$
 ![figure16](images/rnn-figure16.jpg)
 
 # 8 参考链接
-[参考文献1](http://colah.github.io/posts/2015-08-Understanding-LSTMs/)
-[参考文献2](https://towardsdatascience.com/illustrated-guide-to-lstms-and-gru-s-a-step-by-step-explanation-44e9eb85bf21)
-[参考文献3](https://towardsdatascience.com/animated-rnn-lstm-and-gru-ef124d06cf45)
-![参考文献4](https://www.youtube.com/watch?v=xCGidAeyS4M)
+[参考文献1](http://colah.github.io/posts/2015-08-Understanding-LSTMs/) <br>
+[参考文献2](https://towardsdatascience.com/illustrated-guide-to-lstms-and-gru-s-a-step-by-step-explanation-44e9eb85bf21) <br>
+[参考文献3](https://towardsdatascience.com/animated-rnn-lstm-and-gru-ef124d06cf45) <br>
+![参考文献4](https://www.youtube.com/watch?v=xCGidAeyS4M) <br>
