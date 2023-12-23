@@ -132,8 +132,14 @@ $$o_{t} = W^{oh}s_{t}$$
 - 动态展示为：<br>
 ![gif9](images/lstm.gif)
 
-- 工程上的计算过程为：<br>
+- 具体计算过程为：<br>
 ![figure10](images/rnn-figure11.jpg)
+
+- 工程上计算图：<br>
+![figure10](images/rnn-figure17.jpg)
+
+- LSTM 整体图: <br>
+![figure10](images/rnn-figure18.jpg)
 
 ## 6.4 与RNN 类似 LSTM 也有双向的
 ![figure8](images/rnn-figure8.jpg)
