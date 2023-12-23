@@ -41,7 +41,7 @@ sequence 序列输入过程：<br>
 
 ## 3.4 RNN具体计算公式为：<br>
 
-$$s_{t} = \sigma(W^{sx}x_{t} + W^{hh}s_{t-a})$$  
+$$s_{t} = \sigma(W^{sx}x_{t} + W^{hh}s_{t-1})$$  
 
 $$o_{t} = W^{oh}s_{t}$$
 
