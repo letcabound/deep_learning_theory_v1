@@ -151,11 +151,11 @@ $$o_{t} = W^{oh}s_{t}$$
 ## 7.2 原理
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GRU是循环神经网络的新一代，与LSTM非常相似。GRU摒弃了细胞状态，使用隐藏状态来传递信息。它只有两个门，一个重置门(reset gate)和一个更新门(update gate)。<br>
 
-- 更新门（Update Gate）
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp更新门的功能类似于LSTM中的遗忘门和输入门。它决定了要丢弃哪些信息以及要添加哪些新信息。<br>
+- 更新门（Update Gate）<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;更新门的功能类似于LSTM中的遗忘门和输入门。它决定了要丢弃哪些信息以及要添加哪些新信息。<br>
 
-- 重置门（Reset Gate）
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp重置门是另一个门，用于决定要忘记多少过去的信息。<br>
+- 重置门（Reset Gate）<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;重置门是另一个门，用于决定要忘记多少过去的信息。<br>
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GRU的张量操作较少，因此相对于LSTM来说，训练速度稍快一些。目前并没有明确的胜出者，哪种方法更好。研究人员和工程师通常会尝试两种方法，以确定哪种方法在特定的使用案例中效果更好。<br>
 
