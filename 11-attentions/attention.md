@@ -87,7 +87,7 @@ $$Attention(Q, K, V)=softmax(\frac{Q K^{T}}{\sqrt{d_{k}}}) V $$
 
 # 5 Multi-Head self Attention
 ## 5.1 原理简介
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;论文提出将query、key和value分别用不同的、学到的线性映射 h倍 到 $d_{k}$ 、 $d_{k}$ 和 $d_{v}$ 维效果更好，而不是用 $d_model$ 维的query、key和value执行单个attention函数。 基于每个映射版本的query、key和value，我们并行执行attention函数，产生 $d_v$ 维输出值。 将它们连接并再次映射，产生最终值，如下图所示。<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;论文提出将query、key和value分别用不同的、学到的线性映射(其实就是Linear) 映射到 h 倍 到 $d_{q}$ 、 $d_{k}$ 和 $d_{v}$ 维效果更好，而不是用 $d_{model}$ 维的query、key和value执行单个attention函数。 基于每个映射版本（就是每个头/每个组）的query、key和value，我们并行执行attention函数，产生 $d_v$ 维输出值。 将它们连接(concat)并再次映射（linear)，产生最终值，如下图所示。<br>
 
 ![figure14](images/attention-figure14.jpg)
 
