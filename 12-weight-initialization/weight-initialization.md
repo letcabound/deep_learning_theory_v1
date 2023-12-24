@@ -46,13 +46,17 @@
 - 参数初始化必要条件一：各层激活值不会出现饱和现象；
 - 参数初始化必要条件二：各层激活值不为0.
 
-## 5.2 Golort 条件
+## 5.2 Glorot 条件
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Glorot条件，也称为Xavier条件，是一种用于初始化神经网络权重的方法。它是由 Xavier Glorot 和 Yoshua Bengio 在2010年提出的。它的核心思想是 **使网络各层的激活值和反向激活梯度的方差在传播过程中尽量保持一致**，以保持网络中正向和反向数据流动。<br>
 
 *(注释：说的更通俗点就算，随着网络层数的加深，正向激活的分布和反向激活梯度的分布尽量维持一致）* <br>
 
+**具体的Glorot条件如下：** <br>
 - 各个层的激活值 hidden state 的方差要保持一致, 数学表达为:<br>  
 $$\forall(i, i^{\prime}), Var[z^{i}]=Var[z^{i^{\prime}}]$$
+
+- 各个层对状态z的梯度的方差要保持一致, 数学表达式为：<br>
+$$\forall(i, i^{\prime}), Var[\frac{\partial Cost}{\partial s^{i}}]=Var[\frac{\partial Cost}{\partial s^{i'}}]$$
 
 
 
