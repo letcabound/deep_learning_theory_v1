@@ -52,15 +52,40 @@
 *(注释：说的更通俗点就算，随着网络层数的加深，正向激活的分布和反向激活梯度的分布尽量维持一致）* <br>
 
 **具体的Glorot条件如下：** <br>
-- 各个层的激活值 hidden state 的方差要保持一致, 数学表达为:<br>  
+- 各个层的激活的方差要保持一致, 数学表达为:<br>  
 $$\forall(i, i^{\prime}), Var[z^{i}]=Var[z^{i^{\prime}}]$$
 
 - 各个层对状态z的梯度的方差要保持一致, 数学表达式为：<br>
 $$\forall(i, i^{\prime}), Var[\frac{\partial Cost}{\partial s^{i}}]=Var[\frac{\partial Cost}{\partial s^{i'}}]$$
 
-
+- [Glorot 条件论文链接](https://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf)
 
 # 6 塞维尔初始化(Xavier initialization)
+假设一个神经元，其输入为 $z_{1}, z_{2}, \dots, z_{N}$ , 其权重值为 $w_{1}, w_{2}, \dots, w_{N}$ , 均为独立同分布的， 激活函数 f， 神经元输出 y，那么可得到输出 y的数学表达式：<br>
+
+$$y=f(w_{1} * z_{1} + \cdot s + w_{N} * z_{N})$$
+
+按照Glorot条件，我们要寻找w的分布使得输出y与输入z的方差保持一致。同时做如下假设：f 为tanh激活函数， $w_{i}$ 独立同分布， $z_{i}$ 独立同分布，且均值都为0. 则根据Gorot 条件推导如下：<br>
+
+![glorot 公式推导](glorot-formula1.jpg)
+
+反向公式推导类似，于是我们可以得到两组结论：<br>
+
+$$\forall i, & n_{i} Var[W^{i}]=1$$
+
+$$\forall i, & n_{i+1} Var[W^{i}]=1$$
+
+为满足上述公式继续推导，假如我们的wight 按照高斯分布来初始化的话，需要高斯分布如下：<br>
+
+$$W \sim N [0, \sqrt{\frac{2}{n_{in} + n_{out}}]$$
+
+另如果采用均匀分布初始化的话，公式如下：<br>
+
+$$W \sim U [-\frac{\sqrt{6}}{\sqrt{n_{j}+n_{j+1}}}, \frac{\sqrt{6}}{\sqrt{n_{j}+n_{j+1}}}]$$
+
+*(注意：论文只讨论了sigmoid、tanh、softsign这三种激活函数，并没有后来常见的ReLU函数等，这也成为日后kaiming初始化提出的原因。tanh和softsign还有个很好的性质，在0点处导数值为1。）* <br>
+*(注意：Glorot条件和Xavier方法是在2010年提出的，那时ReLU激活函数还未兴起，因此Xavier方法主要是围绕tanh激活函数可能存在的梯度爆炸或梯度消失进行的优化。）* <br>
+
 - [论文链接](https://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf)
 
 # 7 kaiming initialization
