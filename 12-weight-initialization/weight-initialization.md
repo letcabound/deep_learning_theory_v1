@@ -71,13 +71,13 @@ $$y=f(w_{1} * z_{1} + \cdot s + w_{N} * z_{N})$$
 
 反向公式推导类似，于是我们可以得到两组结论：<br>
 
-$$\forall i, & n_{i} Var[W^{i}]=1$$
+$$\forall i, n_{i} Var[W^{i}]=1$$
 
-$$\forall i, & n_{i+1} Var[W^{i}]=1$$
+$$\forall i, n_{i+1} Var[W^{i}]=1$$
 
 为满足上述公式继续推导，假如我们的wight 按照高斯分布来初始化的话，需要高斯分布如下：<br>
 
-$$W \sim N [0, \sqrt{\frac{2}{n_{in} + n_{out}}]$$
+$$W \sim N [0, \sqrt{\frac{2}{n_{in} + n_{out}}}]$$
 
 另如果采用均匀分布初始化的话，公式如下：<br>
 
