@@ -61,25 +61,25 @@ $$\forall(i, i^{\prime}), Var[\frac{\partial Cost}{\partial s^{i}}]=Var[\frac{\p
 - [Glorot 条件论文链接](https://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf)
 
 # 6 塞维尔初始化(Xavier initialization)
-假设一个神经元，其输入为 $z_{1}, z_{2}, \dots, z_{N}$ , 其权重值为 $w_{1}, w_{2}, \dots, w_{N}$ , 均为独立同分布的， 激活函数 f， 神经元输出 y，那么可得到输出 y的数学表达式：<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;假设一个神经元，其输入为 $z_{1}, z_{2}, \dots, z_{N}$ , 其权重值为 $w_{1}, w_{2}, \dots, w_{N}$ , 均为独立同分布的， 激活函数 f， 神经元输出 y，那么可得到输出 y的数学表达式：<br>
 
 $$y=f(w_{1} * z_{1} + \cdot s + w_{N} * z_{N})$$
 
-按照Glorot条件，我们要寻找w的分布使得输出y与输入z的方差保持一致。同时做如下假设：f 为tanh激活函数， $w_{i}$ 独立同分布， $z_{i}$ 独立同分布，且均值都为0. 则根据Gorot 条件推导如下：<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;按照Glorot条件，我们要寻找w的分布使得输出y与输入z的方差保持一致。同时做如下假设：f 为tanh激活函数， $w_{i}$ 独立同分布， $z_{i}$ 独立同分布，且均值都为0. 则根据Gorot 条件推导如下：<br>
 
 ![glorot 公式推导](glorot-formula1.jpg)
 
-反向公式推导类似，于是我们可以得到两组结论：<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;反向公式推导类似，于是我们可以得到两组结论：<br>
 
 $$\forall i, n_{i} Var[W^{i}]=1$$
 
 $$\forall i, n_{i+1} Var[W^{i}]=1$$
 
-为满足上述公式继续推导，假如我们的wight 按照高斯分布来初始化的话，需要高斯分布如下：<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;为满足上述公式继续推导，假如我们的wight 按照高斯分布来初始化的话，需要高斯分布如下：<br>
 
 $$W \sim N [0, \sqrt{\frac{2}{n_{in} + n_{out}}}]$$
 
-另如果采用均匀分布初始化的话，公式如下：<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;另如果采用均匀分布初始化的话，公式如下：<br>
 
 $$W \sim U [-\frac{\sqrt{6}}{\sqrt{n_{j}+n_{j+1}}}, \frac{\sqrt{6}}{\sqrt{n_{j}+n_{j+1}}}]$$
 
@@ -89,12 +89,92 @@ $$W \sim U [-\frac{\sqrt{6}}{\sqrt{n_{j}+n_{j+1}}}, \frac{\sqrt{6}}{\sqrt{n_{j}+
 - [论文链接](https://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf)
 
 # 7 kaiming initialization
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;kaiming初始化的推导过程只包含卷积和ReLU激活函数, 默认是vgg类似的网络, 没有残差, concat之类的结构, 也没有BN层.<br>
+
+## 7.1 方差计算数学基础
+
+
+
+
+## 7.2 前向推导过程
+$$Y_{l}=W_{l} X_{l}+B_{l}$$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;此处,  $Y_{l}$ 表示某个位置的输出值, $X_{l}$ 表示被卷积的输入(shape: $k \times k \times c$ ), 另 $n=k \times k \times c$, 则n的大小表示一个输出值是由多少个输入值计算出来的(求方差的时候用到).  W shape 为 $d \times n$ ,  其中，d表示的输出通道的数量. 下标 l 表示第几层.  $X_{l}=f\left(Y_{l-1}\right)$ , f 表示激活**函数ReLU** , 表示前一层的输出经过激活函数变成下一层的输入.  $c_{l}=d_{l-1}$ 表示网络下一层的输入通道数等于上一层的输出通道数. <br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;根据过个随机变量和的方差推导公式为：<br>
+$$var (y_{l})=n_{l} var(w_{l} \cdot x_{l})$$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;根据两个随机变量积的方差公式可得：<br>
+
+$$var(y_{l})=n_{l}[var(w_{l}) var(x_{l})+var(w_{l})(E x_{l})^{2}+(E w_{l})^{2} var(x_{l})]$$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;初始化的时候令**权重的均值是0**, 且假设更新的过程中权重的均值一直是0, 则 $E(w_{l})=0$ , 但是 $x_{l}$ 是上一层通过ReLU得到的,所以  $E(x_{l}) \neq 0$ . 于是上式可化简为：<br>
+
+$$var(y_{l})=n_{l}[var(w_{l}) var(x_{l})+var(w_{l})(E x_{l})^{2}]=n_{l} var(w_{l})(var(x_{l})+(Ex_{l})^{2})$$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;由方差和期望的关系 $$var(x_{l})+(Ex_{l})^{2}=E(x_{l}^{2})$$ 将上式化简为: <br>
+
+$$var(y_{l})=n_{l} var(w_{l}) E(x_{l}^{2})$$
+
+通过对l-1层的输出来求 $E(x_{l}^{2})$ , 其中激活函数为Relu, 我们记为 f: <br>
+
+$$E(x_{l}^{2})=E(f^{2}(y_{l-1}))=\int_{-\infty}^{+\infty} p(y_{l-1}) f^{2}(y_{l-1}) dy_{l-1}$$
+
+该公式可最终化简为: <br>
+
+$$E(x_{l}^{2})=\frac{1}{2} E(y_{l-1}^{2})=\frac{1}{2} var(y_{l-1})$$
+
+于是我们得到最终方差传递公式: <br>
+
+$$var(y_{l})=\frac{1}{2} n_{l} var(w_{l}) var(y_{l-1})$$
+
+我们让每层输出方差相等(等于1), 即: <br>
+
+$$\frac{1}{2} n_{l} var(w_{l})=1$$
+
+于是我们得到随机变量 weight 的方差为: <br>
+
+$$var(w_{l})=\frac{2}{n_{l}}$$
+
+**思考: 那么我们应该如何初始化weight呢？？？需要知道上一层的输出个数吗？？？** <br>
+- 以卷积为例：<br>
+
+假设进行conv 操作： Input：1 x 32 x 16 x 16 , kernel ： 64 x 32 x 3 x 3。 则该层的权重  $w \sim N (0, \frac{2}{32 \times 3 \times 3})$ , 偏置初始化为  0. $64 \times 32 \times 3 \times 3=18432$ 个参数都是从这个分布里面采样. 也对应了Pytorch里面的kaiming初始化**只要传卷积核的参数进去就行了**，可以看下源码对应的计算. <br>
+
+## 7.3 反向推导过程
+
+- 反向传播是的线性变换为: <br>
+
+$$\Delta X_{l}=\hat{W}_{l} \Delta Y_{l}$$
+
+其中, $\Delta$ 表示损失函数对其求导. 与正常的反向传播推导不一样，这里假设  $\Delta Y_{l}$  表示d个通道，每个通大小为 $c \times \hat{n}$, 所以 $\Delta X_{l}$ 的形状为 $c \times l$ . $\hat{W}$  和 W 只差了一个转置(涉及到反向传播). 同样的想法是一个  
+ $\Delta x_{l}$  的值是很多个 $\Delta y_{l}$  求得的, 继续通过多个独立同分布变量求一个变量(梯度)的方差. 假设随机变量 $\hat{w}_{l}, \Delta y_{l}$  都是独立同分布的. $\hat{w_{l}}$ 的分布在 0 附近是对称的，则  $\Delta x_{l}$ 对每层l，均值都是0, 即  
+ $E(\Delta x_{l})=0$ . 
+
+- 激活函数变换为：<br>
+因为前向传播的时候激活变换为 $x_{l+1}=f(y_{l})$ , 反向时变为：<br>
+
+$$\Delta y_{l}=f^{\prime}(y_{l}) \Delta x_{l+1}$$
+
+- 最终我们可以推出：<br>
+
+$$\frac{1}{2} \hat{n}_{l} var(w_{l})=1$$
+
+
+
+
+
+
+
+
+
 
 - [论文链接](https://arxiv.org/pdf/1502.01852)
 # 8 参考文献
 - [从基础到凯明](https://towardsdatascience.com/weight-initialization-in-neural-networks-a-journey-from-the-basics-to-kaiming-954fb9b47c79)
-- [文献1](https://arxiv.org/pdf/1502.01852.pdf)
 - [All you need is a good init](https://arxiv.org/abs/1511.06422)
 - [书籍](https://zh-v2.d2l.ai/chapter_multilayer-perceptrons/numerical-stability-and-init.html)
+- [文献1](https://arxiv.org/pdf/1502.01852.pdf)
 - [文献2](https://cloud.tencent.com/developer/article/1535198)
 - [文献3](https://cloud.tencent.com/developer/column/5139)
+- [文献4](https://zhuanlan.zhihu.com/p/305055975)
