@@ -78,9 +78,6 @@ class TensorBase(metaclass=_TensorMeta):
     _grad: Optional[Tensor]
     grad: Optional[Tensor]
     _backward_hooks: Optional[Dict[_int, Callable[[Tensor], Optional[Tensor]]]]
-    nbytes: _int
-    itemsize: _int
-    _has_symbolic_sizes_strides: _bool
     ${tensor_method_hints}
 
 _TensorBase = TensorBase
