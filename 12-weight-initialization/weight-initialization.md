@@ -91,6 +91,8 @@ $$W \sim U [-\frac{\sqrt{6}}{\sqrt{n_{j}+n_{j+1}}}, \frac{\sqrt{6}}{\sqrt{n_{j}+
 # 7 kaiming initialization
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;kaiming初始化的推导过程只包含卷积和ReLU激活函数, 默认是vgg类似的网络, 没有残差, concat之类的结构, 也没有BN层.<br>
 
+- [论文链接](https://arxiv.org/pdf/1502.01852)
+
 ## 7.1 方差计算数学基础
 
 $$var(X_{1}+\cdots+X_{n})=var(X_{1})+\cdots+var(X_{n})$$
@@ -164,13 +166,34 @@ $$\frac{1}{2} \hat{n_{l}} var(w_{l})=1$$
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;按照前向传播最后的示例，此处的w为： $w \sim N\left(0, \frac{2}{64 \times 3 \times 3}\right)$ . <br>
 
 ## 7.4 凯明初始化总结
+### 7.4.1 服从正态分布时
+- 考虑前向传播方差相等时公式：<br>
+  
+$$W \sim N (0, \frac{2}{fan_{in}}) $$
 
+- 考虑反向传方差相等时公式：<br>
+$$W \sim N (0, \frac{2}{fan_{out}}) $$
+
+### 7.4.2 服从均匀分布时:
+均匀分布 $X \sim U(a, b)$ 的方差: $\frac{(b-a)^{2}}{12}$ . <br>
+
+- 考虑前向传播方差相等时公式：<br>
+  
+$$W \sim U[-\sqrt{\frac{6}{n_{i}}}, \sqrt{\frac{6}{n_{i}}}] $$
+
+- 考虑反向传方差相等时公式：<br>
+
+$$W \sim U[-\sqrt{\frac{6}{n_{i}}}, \sqrt{\frac{6}{\hat{n_{i}}}}] $$
 
 # 8 初始化策略选择
 ![weight init](https://s2.ax1x.com/2019/11/20/MfIhi6.png)
 
-- [论文链接](https://arxiv.org/pdf/1502.01852)
-# 8 参考文献
+# 9 使用预训练的weight
+- 神经网络需要用数据来训练，它从数据中获得信息，进而把它们转换成相应的权重。这些权重能够被提取出来，迁移到其他的神经网络中，我们**迁移**了这些学来的特征，就不需要从零开始训练一个神经网络了。<br>
+
+- 通过使用之前在大数据集上经过训练的预训练模型，我们可以直接使用相应的结构和权重，将它们应用到我们正在面对的问题上。这被称作是“迁移学习”，即将预训练的模型“迁移”到我们正在应对的特定问题中。<br>
+
+# 10 参考文献
 - [从基础到凯明](https://towardsdatascience.com/weight-initialization-in-neural-networks-a-journey-from-the-basics-to-kaiming-954fb9b47c79)
 - [All you need is a good init](https://arxiv.org/abs/1511.06422)
 - [书籍](https://zh-v2.d2l.ai/chapter_multilayer-perceptrons/numerical-stability-and-init.html)
