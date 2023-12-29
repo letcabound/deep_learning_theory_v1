@@ -145,9 +145,9 @@ $$var(w_{l})=\frac{2}{n_{l}}$$
 
 - 反向传播是的线性变换为: <br>
 
-$$\Delta X_{l}=\hat{W}_{l} \Delta Y_{l}$$
+$$\Delta X_{l}=\hat{W_{l}} \Delta Y_{l}$$
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;其中, $\Delta$ 表示损失函数对其求导. 与正常的反向传播推导不一样，这里假设  $\Delta Y_{l}$  表示d个通道，每个通大小为 $c \times \hat{n}$, 所以 $\Delta X_{l}$ 的形状为 $c \times l$ . $\hat{W}$  和 W 只差了一个转置(涉及到反向传播). 同样的想法是一个 $\Delta x_{l}$  的值是很多个 $\Delta y_{l}$  求得的, 继续通过多个独立同分布变量求一个变量(梯度)的方差. 假设随机变量 $\hat{w}_{l}, \Delta y_{l}$  都是独立同分布的. $\hat{w_{l}}$ 的分布在 0 附近是对称的，则  $\Delta x_{l}$ 对每层l，均值都是0, 即 $E(\Delta x_{l})=0$ . 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;其中, $\Delta$ 表示损失函数对其求导. 与正常的反向传播推导不一样，这里假设  $\Delta Y_{l}$  表示d个通道，每个通大小为 $c \times \hat{n}$ , 所以 $\Delta X_{l}$ 的形状为 $c \times l$ . $\hat{W}$  和 W 只差了一个转置(涉及到反向传播). 同样的想法是一个 $\Delta x_{l}$  的值是很多个 $\Delta y_{l}$  求得的, 继续通过多个独立同分布变量求一个变量(梯度)的方差. 假设随机变量 $\hat{w_{l}}, \Delta y_{l}$  都是独立同分布的. $\hat{w_{l}}$ 的分布在 0 附近是对称的，则  $\Delta x_{l}$ 对每层l，均值都是0, 即 $E(\Delta x_{l})=0$ . <br>
 
 - 激活函数变换为：<br>
 因为前向传播的时候激活变换为 $x_{l+1}=f(y_{l})$ , 反向时变为：<br>
