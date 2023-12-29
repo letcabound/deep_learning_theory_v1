@@ -93,8 +93,11 @@ $$W \sim U [-\frac{\sqrt{6}}{\sqrt{n_{j}+n_{j+1}}}, \frac{\sqrt{6}}{\sqrt{n_{j}+
 
 ## 7.1 方差计算数学基础
 
+$$var(X_{1}+\cdots+X_{n})=var(X_{1})+\cdots+var(X_{n})$$
 
+$$var(X)=E(X^{2})-(E X)^{2}$$
 
+$$var(X Y)=var(X) var(Y)+var(X)(E Y)^{2}+var(Y)(E X)^{2}$$
 
 ## 7.2 前向推导过程
 $$Y_{l}=W_{l} X_{l}+B_{l}$$
@@ -156,16 +159,15 @@ $$\Delta y_{l}=f^{\prime}(y_{l}) \Delta x_{l+1}$$
 
 - 最终我们可以推出：<br>
 
-$$\frac{1}{2} \hat{n}_{l} var(w_{l})=1$$
+$$\frac{1}{2} \hat{n_{l}} var(w_{l})=1$$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;按照前向传播最后的示例，此处的w为： $w \sim N\left(0, \frac{2}{64 \times 3 \times 3}\right)$ . <br>
+
+## 7.4 凯明初始化总结
 
 
-
-
-
-
-
-
-
+# 8 初始化策略选择
+![weight init](https://s2.ax1x.com/2019/11/20/MfIhi6.png)
 
 - [论文链接](https://arxiv.org/pdf/1502.01852)
 # 8 参考文献
