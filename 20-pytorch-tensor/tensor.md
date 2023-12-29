@@ -95,29 +95,91 @@ print(aa[1].output_nr)
 ```
 
 
-# 3 外层Tensor 方法汇总
+# 3 外层 Tensor 方法汇总
 ```python
-def storage(self):
-def,_typed_storage(self):  \cdots 
-def__reduce_ex_internal(self, proto):  \cdots 
-def '_setstate_(self, state):  \cdots 
-def __repr_(self,  { }^{*} , 'tensor_contents=None):  \cdots 
-def backward (  \cdots 
-def \cdot register_hook(self, 'hook):  \cdots 
-def reinforce(self, reward): '..
-detach  ={ }_{-} C._add_docstr  (\cdots 
-detach_  =  :  C \cdot ._add_docstr  (\cdots 
-def  \cdot  is_shared(self):  \cdot .
-def share_memory_(self):  \cdots 
-def ___reversed_(self):  \cdots 
-def  \operatorname{norm}(\cdots 
-def solve(self, other):  \cdots 
-def lstsq(self, other): '.
-def eig(self, eigenvectors=False):  \cdots 
-def symeig(self, eigenvectors=False):  \cdots 
-def lu(self, pivot=True, get_infos=False):  \cdots 
-def  \operatorname{stft}(\cdots 
-def istft ( ...
+def __deepcopy__(self, memo):   #自定义对象在深拷贝（deep copy）操作中的行为
+def__reduce_ex__(self, proto):  #自定义对象在序列化和反序列化过程中的行为
+def storage(self):  # 返回与张量关联的底层数据存储对象 
+def__reduce_ex_internal(self, proto): '. # 被__reduce_ex__调用
+def __setstate__(self, state):  # 自定义在反序列化过程中恢复对象状态的行为
+def __repr__(self, *, tensor_contents=None): # 定义对象的字符串表示形式。当调用 repr(obj) 或在交互式环境中直接输入 obj 时，Python 会调用对象的 __repr__ 方法来获取对象的字符串表示。
+def backward(self, gradient=None, retain_graph=None, create_graph=False, inputs=None): # 计算当前张量相对于计算图叶节子节点的梯度
+def register_hook(self, hook): # 注册反向钩子函数，计算完该张量的梯度时，钩子（hook）将被调用。
+def reinforce(self, reward): # 强制报错
+detach  =  _C.__add_docstr(_C._TensorBase.detach）# Returns a new Tensor, detached from the current graph.
+detach_  =  _C.__add_docstr(_C._TensorBase.detach_) # 将张量从创建它的计算图中分离，使其成为叶节点。
+def is_shared(self): # 检查张量是否位于共享内存中。对于 CUDA 张量（即在 GPU 上的张量），该方法始终返回 True
+def share_memory_(self): # 将底层存储移动到共享内存 Moves the underlying storage to shared memory
+def__reversed__(self):  # 按照某个维度对张量进行反转操作，可以用 torch.flip() 调用
+def norm(self, p="fro", dim=None, keepdim=False, dtype=None): # 参考torch.norm --> 返回给定张量的矩阵范数或向量范数。
+def solve(self, other): # 解线性方程组，参考torch.solve() ： torch.solve(input, A) -> (solution, LU) 
+def lstsq(self, other):  # 求解线性最小二乘问题
+def eig(self, eigenvectors=False): # 计算一个实对称或复数方阵的特征值和特征向量。
+def lu(self, pivot=True, get_infos=False): # 执行 LU 分解（LU decomposition） 
+def stft(...) # 短时傅里叶变换
+def istft (...）  短时傅里叶逆变换
+def resize(self,~*sizes): # 
+def resize_as(self, tensor): '..
+def split(self, split_size,  \operatorname{dim}=0): \cdots 
+def unique(self, sorted=True, return_inverse=False, return_counts=False, dim=None):  \cdots 
+def unique_consecutive(self, return_inverse=False, return_counts=False, dim=None):  \cdots 
+@_handle_torch_function_and_wrap_type_error_to_not_implemented
+def__rsub_(self, other): '.
+@_handle_torch_function_and_wrap_type_error_to_not_implemented
+def__rdiv_(self, other): '.
+
+_rtruediv__  =  _rdiv_
+_itruediv_  =  _C._TensorBase._idiv_
+_ pow_ = _handle_torch_function_and_wrap_type_error_to_not_implemented (  \cdots 
+ipow_ = _handle_torch_function_and_wrap_type_error_to_not_implemented (  \cdots 
+@_handle_torch_function_and_wrap_type_error_to_not_implemented def__rmod_(self, other): '.
+def_format_(self, format_spec):
+@_handle_torch_function_and_wrap_type_error_to_not_implemented
+def__rpow_(self, other):
+@_handle_torch_function_and_wrap_type_error_to_not_implemented
+def_floordiv_(self, other):
+@_handle_torch_function_and_wrap_type_error_to_not_implemented
+def_rfloordiv_(self, other):
+@_handle_torch_function_and_wrap_type_error_to_not_implemented
+def__rlshift_(self, other):
+@_handle_torch_function_and_wrap_type_error_to_not_implemented
+def_rrshift_(self, other):  \cdots 
+@_handle_torch_function_and_wrap_type_error_to_not_implemented
+def__rmatmul_(self, other):
+
+
+__pos__ = _C._TensorBase.positive 
+__neg_ = _C._TensorBase.neg 
+__abs__ = _C._TensorBase.abs
+
+def__len_(self):  \cdots 
+def__iter_(self): '.
+def__hash_(self): '.
+def__dir_(self):  \cdots 
+\# Numpy array interface, to support "numpy.as
+_array_priority_  =1000  \# prefer Tensor op
+def__array_(self, dtype=None): '..
+\# Wrap Numpy array again in a suitable tensor
+\# 'numpy.sin(tensor) -> tensor" or 'numpy.gre
+def__array_wrap_(self, array): ...
+def__contains_(self, element): '.
+@property
+def__cuda_array_interface_(self):  \cdots 
+def storage_type(self): '..
+def refine_names(self, *names): '.
+def align_to(self, *names): ...
+def unflatten(self, dim, sizes):  \cdots 
+def rename_(self, *names, **rename_map):  \cdots 
+def rename(self, *names, **rename_map):
+def to_sparse_coo(self):  \cdots
+
+def_update_names(self, names, inplace):  \cdots 
+@classmethod
+def_torch_function_(cls, func, types, args=(), kwargs=None):
+__torch_dispatch__ = C._disabled_torch_dispatch_impl
+def__dlpack_(self, stream=None): '..
+def__dlpack_device_(self) -> Tuple[enum.IntEnum, int]: ..
+__module__ = "torch"
 
 ```
 
