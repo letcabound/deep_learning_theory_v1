@@ -116,30 +116,30 @@ $$var(y_{l})=n_{l}[var(w_{l}) var(x_{l})+var(w_{l})(E x_{l})^{2}]=n_{l} var(w_{l
 
 $$var(y_{l})=n_{l} var(w_{l}) E(x_{l}^{2})$$
 
-通过对l-1层的输出来求 $E(x_{l}^{2})$ , 其中激活函数为Relu, 我们记为 f: <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通过对l-1层的输出来求 $E(x_{l}^{2})$ , 其中激活函数为Relu, 我们记为 f: <br>
 
 $$E(x_{l}^{2})=E(f^{2}(y_{l-1}))=\int_{-\infty}^{+\infty} p(y_{l-1}) f^{2}(y_{l-1}) dy_{l-1}$$
 
-该公式可最终化简为: <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;该公式可最终化简为: <br>
 
 $$E(x_{l}^{2})=\frac{1}{2} E(y_{l-1}^{2})=\frac{1}{2} var(y_{l-1})$$
 
-于是我们得到最终方差传递公式: <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;于是我们得到最终方差传递公式: <br>
 
 $$var(y_{l})=\frac{1}{2} n_{l} var(w_{l}) var(y_{l-1})$$
 
-我们让每层输出方差相等(等于1), 即: <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;我们让每层输出方差相等(等于1), 即: <br>
 
 $$\frac{1}{2} n_{l} var(w_{l})=1$$
 
-于是我们得到随机变量 weight 的方差为: <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;于是我们得到随机变量 weight 的方差为: <br>
 
 $$var(w_{l})=\frac{2}{n_{l}}$$
 
 **思考: 那么我们应该如何初始化weight呢？？？需要知道上一层的输出个数吗？？？** <br>
 - 以卷积为例：<br>
 
-假设进行conv 操作： Input：1 x 32 x 16 x 16 , kernel ： 64 x 32 x 3 x 3。 则该层的权重  $w \sim N (0, \frac{2}{32 \times 3 \times 3})$ , 偏置初始化为  0. $64 \times 32 \times 3 \times 3=18432$ 个参数都是从这个分布里面采样. 也对应了Pytorch里面的kaiming初始化**只要传卷积核的参数进去就行了**，可以看下源码对应的计算. <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;假设进行conv 操作： Input：1 x 32 x 16 x 16 , kernel ： 64 x 32 x 3 x 3。 则该层的权重  $w \sim N (0, \frac{2}{32 \times 3 \times 3})$ , 偏置初始化为  0. $64 \times 32 \times 3 \times 3=18432$ 个参数都是从这个分布里面采样. 也对应了Pytorch里面的kaiming初始化**只要传卷积核的参数进去就行了**，可以看下源码对应的计算. <br>
 
 ## 7.3 反向推导过程
 
@@ -147,9 +147,7 @@ $$var(w_{l})=\frac{2}{n_{l}}$$
 
 $$\Delta X_{l}=\hat{W}_{l} \Delta Y_{l}$$
 
-其中, $\Delta$ 表示损失函数对其求导. 与正常的反向传播推导不一样，这里假设  $\Delta Y_{l}$  表示d个通道，每个通大小为 $c \times \hat{n}$, 所以 $\Delta X_{l}$ 的形状为 $c \times l$ . $\hat{W}$  和 W 只差了一个转置(涉及到反向传播). 同样的想法是一个  
- $\Delta x_{l}$  的值是很多个 $\Delta y_{l}$  求得的, 继续通过多个独立同分布变量求一个变量(梯度)的方差. 假设随机变量 $\hat{w}_{l}, \Delta y_{l}$  都是独立同分布的. $\hat{w_{l}}$ 的分布在 0 附近是对称的，则  $\Delta x_{l}$ 对每层l，均值都是0, 即  
- $E(\Delta x_{l})=0$ . 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;其中, $\Delta$ 表示损失函数对其求导. 与正常的反向传播推导不一样，这里假设  $\Delta Y_{l}$  表示d个通道，每个通大小为 $c \times \hat{n}$, 所以 $\Delta X_{l}$ 的形状为 $c \times l$ . $\hat{W}$  和 W 只差了一个转置(涉及到反向传播). 同样的想法是一个 $\Delta x_{l}$  的值是很多个 $\Delta y_{l}$  求得的, 继续通过多个独立同分布变量求一个变量(梯度)的方差. 假设随机变量 $\hat{w}_{l}, \Delta y_{l}$  都是独立同分布的. $\hat{w_{l}}$ 的分布在 0 附近是对称的，则  $\Delta x_{l}$ 对每层l，均值都是0, 即 $E(\Delta x_{l})=0$ . 
 
 - 激活函数变换为：<br>
 因为前向传播的时候激活变换为 $x_{l+1}=f(y_{l})$ , 反向时变为：<br>
