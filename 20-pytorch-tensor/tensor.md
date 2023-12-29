@@ -95,3 +95,29 @@ print(aa[1].output_nr)
 ```
 
 
+# 3 外层Tensor 方法汇总
+```python
+def storage(self):
+def,_typed_storage(self):  \cdots 
+def__reduce_ex_internal(self, proto):  \cdots 
+def '_setstate_(self, state):  \cdots 
+def __repr_(self,  { }^{*} , 'tensor_contents=None):  \cdots 
+def backward (  \cdots 
+def \cdot register_hook(self, 'hook):  \cdots 
+def reinforce(self, reward): '..
+detach  ={ }_{-} C._add_docstr  (\cdots 
+detach_  =  :  C \cdot ._add_docstr  (\cdots 
+def  \cdot  is_shared(self):  \cdot .
+def share_memory_(self):  \cdots 
+def ___reversed_(self):  \cdots 
+def  \operatorname{norm}(\cdots 
+def solve(self, other):  \cdots 
+def lstsq(self, other): '.
+def eig(self, eigenvectors=False):  \cdots 
+def symeig(self, eigenvectors=False):  \cdots 
+def lu(self, pivot=True, get_infos=False):  \cdots 
+def  \operatorname{stft}(\cdots 
+def istft ( ...
+
+```
+
