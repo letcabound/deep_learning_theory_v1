@@ -118,35 +118,37 @@ def eig(self, eigenvectors=False): # 计算一个实对称或复数方阵的特�
 def lu(self, pivot=True, get_infos=False): # 执行 LU 分解（LU decomposition） 
 def stft(...) # 短时傅里叶变换
 def istft (...）  短时傅里叶逆变换
-def resize(self,~*sizes): # 
-def resize_as(self, tensor): '..
-def split(self, split_size,  \operatorname{dim}=0): \cdots 
-def unique(self, sorted=True, return_inverse=False, return_counts=False, dim=None):  \cdots 
-def unique_consecutive(self, return_inverse=False, return_counts=False, dim=None):  \cdots 
+def resize(self,~*sizes): # 根据需要重新分配内存，可能返回原始张量的视图（view）或副本（copy）
+def resize_as(self, tensor): # 按照另一个tensor的 size 来 resize
+def split(self, split_size,  dim=0): # 同torch.split，将一个tensor split 成多个tensor
+def unique(self, sorted=True, return_inverse=False, return_counts=False, dim=None): # 返回输入张量的唯一元素，去重作用，输出为一维的
+def unique_consecutive(self, return_inverse=False, return_counts=False, dim=None): # 消除每个连续数据中除第一个元素之外的所有元素
 @_handle_torch_function_and_wrap_type_error_to_not_implemented
-def__rsub_(self, other): '.
+def__rsub__(self, other): # 定义tensor 右侧减法 result = other - self 的行为
 @_handle_torch_function_and_wrap_type_error_to_not_implemented
-def__rdiv_(self, other): '.
+def__rdiv__(self, other): # 定义tensor 右侧除法的行为, 使用运算符 // 进行操作，表示执行整数除法或向下取整除法，目前已被 __rfloatdiv__  代替
 
-_rtruediv__  =  _rdiv_
-_itruediv_  =  _C._TensorBase._idiv_
-_ pow_ = _handle_torch_function_and_wrap_type_error_to_not_implemented (  \cdots 
-ipow_ = _handle_torch_function_and_wrap_type_error_to_not_implemented (  \cdots 
-@_handle_torch_function_and_wrap_type_error_to_not_implemented def__rmod_(self, other): '.
-def_format_(self, format_spec):
-@_handle_torch_function_and_wrap_type_error_to_not_implemented
-def__rpow_(self, other):
-@_handle_torch_function_and_wrap_type_error_to_not_implemented
-def_floordiv_(self, other):
-@_handle_torch_function_and_wrap_type_error_to_not_implemented
-def_rfloordiv_(self, other):
-@_handle_torch_function_and_wrap_type_error_to_not_implemented
-def__rlshift_(self, other):
-@_handle_torch_function_and_wrap_type_error_to_not_implemented
-def_rrshift_(self, other):  \cdots 
-@_handle_torch_function_and_wrap_type_error_to_not_implemented
-def__rmatmul_(self, other):
+__rtruediv__  =  __rdiv__ # 右侧真除法使用运算符 / 进行操作，表示执行浮点数除法
+__itruediv_  =  _C._TensorBase._idiv_ # 用于实现就地真除法运算符 /= 的行为
+__ pow__ = _handle_torch_function_and_wrap_type_error_to_not_implemented(_C._TensorBase.pow) # 实现幂运算，即通过运算符 ** 进行操作
+__ipow__ = _handle_torch_function_and_wrap_type_error_to_not_implemented (_C._TensorBase.pow_) # 实现就地幂运算，即通过运算符 **= 进行操作
 
+def__format__(self, format_spec): # 使用内置的 format() 函数 进行格式化时调用
+
+@_handle_torch_function_and_wrap_type_error_to_not_implemented
+def __rmod__(self, other): # 定义右侧取模运算符（取余运算符）% 的行为
+@_handle_torch_function_and_wrap_type_error_to_not_implemented
+def __rpow__(self, other): # 定义右侧取幂运算符 ** 的行为
+@_handle_torch_function_and_wrap_type_error_to_not_implemented
+def __floordiv__(self, other): # 用于实现整数除法运算 // 的行为。
+@_handle_torch_function_and_wrap_type_error_to_not_implemented
+def __rfloordiv__(self, other): # 实现右侧整数除法运算 // 的行为
+@_handle_torch_function_and_wrap_type_error_to_not_implemented
+def __rlshift__(self, other): # 实现右侧的位左移运算符 << 的行为
+@_handle_torch_function_and_wrap_type_error_to_not_implemented
+def __rrshift_(self, other):  # 实现右侧的位右移运算符 >> 的行为 
+@_handle_torch_function_and_wrap_type_error_to_not_implemented
+def __rmatmul__(self, other): # 用于实现右侧矩阵乘法运算符 @ 的行为
 
 __pos__ = _C._TensorBase.positive 
 __neg_ = _C._TensorBase.neg 
