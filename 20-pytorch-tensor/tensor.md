@@ -150,38 +150,34 @@ def __rrshift_(self, other):  # 实现右侧的位右移运算符 >> 的行为
 @_handle_torch_function_and_wrap_type_error_to_not_implemented
 def __rmatmul__(self, other): # 用于实现右侧矩阵乘法运算符 @ 的行为
 
-__pos__ = _C._TensorBase.positive 
-__neg_ = _C._TensorBase.neg 
-__abs__ = _C._TensorBase.abs
+__pos__ = _C._TensorBase.positive # 实现正号运算符（一元加法）的行为
+__neg_ = _C._TensorBase.neg # 实现负号运算符（一元加法）的行为
+__abs__ = _C._TensorBase.abs # 实现绝对值运算符（一元加法）的行为
 
-def__len_(self):  \cdots 
-def__iter_(self): '.
-def__hash_(self): '.
-def__dir_(self):  \cdots 
-\# Numpy array interface, to support "numpy.as
-_array_priority_  =1000  \# prefer Tensor op
-def__array_(self, dtype=None): '..
-\# Wrap Numpy array again in a suitable tensor
-\# 'numpy.sin(tensor) -> tensor" or 'numpy.gre
-def__array_wrap_(self, array): ...
-def__contains_(self, element): '.
+def __len__(self):  # 返回 Tensor 对象的维度
+def __iter__(self): # 用于使 Tensor 对象可迭代
+def __hash__(self): # 支持 Tensor 对象的哈希操作。
+def __dir__(self):  # 用于返回 Tensor 对象的属性和方法列表。
+__array_priority_  =1000 # support `numpy.asarray(tensor) -> ndarray
+def __array_(self, dtype=None): # 支持将 Tensor 对象转换为 NumPy 数组
+def __array_wrap__(self, array): # 用np 操作Tensor对象，并返回 Tensor： numpy.sin(tensor) -> tensor
+def __contains__(self, element): # 用于判断某个值是否存在于 Tensor 对象中，用 in 来触发 
+
 @property
-def__cuda_array_interface_(self):  \cdots 
-def storage_type(self): '..
-def refine_names(self, *names): '.
-def align_to(self, *names): ...
-def unflatten(self, dim, sizes):  \cdots 
-def rename_(self, *names, **rename_map):  \cdots 
-def rename(self, *names, **rename_map):
-def to_sparse_coo(self):  \cdots
-
-def_update_names(self, names, inplace):  \cdots 
+def __cuda_array_interface_(self): # CUDA 张量的数组视图描述
+def storage_type(self): # 存储的数据类型
+def refine_names(self, *names): # 修改或细化 Tensor 对象的维度命名 ：x = torch.randn(3, 4, 5, names=('batch', 'channel', 'height'))
+def align_to(self, *names): # 调整 Tensor 对象的维度顺序以匹配指定的顺序： y = x.align_to('height', 'batch', 'channel')
+def unflatten(self, dim, sizes): # 用于将一个连续的一维 Tensor 对象重新转换为具有指定维度大小的多维 Tensor 对象
+def rename_(self, *names, **rename_map): # rename_ 是一个方法，用于原地修改 Tensor 对象的维度名称。
+def rename(self, *names, **rename_map): # 修改 Tensor 对象的维度名称
+def to_sparse_coo(self): # 用于将一个稠密（dense）的 Tensor 对象转换为 COO（Coordinate）格式的稀疏（sparse）Tensor 对象
+def _update_names(self, names, inplace): # 原地更新 Tensor 对象的维度名称。
 @classmethod
-def_torch_function_(cls, func, types, args=(), kwargs=None):
-__torch_dispatch__ = C._disabled_torch_dispatch_impl
-def__dlpack_(self, stream=None): '..
-def__dlpack_device_(self) -> Tuple[enum.IntEnum, int]: ..
-__module__ = "torch"
-
+def __torch_function__(cls, func, types, args=(), kwargs=None): # 对子类进行包装，使得在子类上调用的方法返回一个子类实例，而不是一个 torch.Tensor 实例， 需要自己在该方法内做转化
+__torch_dispatch__ = C._disabled_torch_dispatch_impl # 用于定义自定义的分发逻辑，以便根据输入的类型、形状或其他条件来选择适当的实现。
+def __dlpack__(self, stream=None): # 用于将 Tensor 对象转换为 DLPack 格式。DLPack 是一种用于在不同深度学习框架之间交换数据的标准化格式
+def __dlpack_device__(self) -> Tuple[enum.IntEnum, int]: # 用于获取 Tensor 对象所在的设备信息并返回。DLPack 是一种用于在不同深度学习框架之间交换数据的标准化格式
+__module__ = "torch" # 用于指示 Tensor 对象所属的模块
 ```
 
