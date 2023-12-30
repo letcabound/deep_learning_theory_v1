@@ -99,12 +99,14 @@ print(aa[1].output_nr)
 ```python
 def __deepcopy__(self, memo):   #自定义对象在深拷贝（deep copy）操作中的行为
 def__reduce_ex__(self, proto):  #自定义对象在序列化和反序列化过程中的行为
-def storage(self):  # 返回与张量关联的底层数据存储对象 
+def storage(self):  # 返回与张量关联的底层数据存储对象
+def _typed_storage(self): # For internal use only, to avoid raising deprecation warning <new>.
 def__reduce_ex_internal(self, proto): '. # 被__reduce_ex__调用
 def __setstate__(self, state):  # 自定义在反序列化过程中恢复对象状态的行为
 def __repr__(self, *, tensor_contents=None): # 定义对象的字符串表示形式。当调用 repr(obj) 或在交互式环境中直接输入 obj 时，Python 会调用对象的 __repr__ 方法来获取对象的字符串表示。
 def backward(self, gradient=None, retain_graph=None, create_graph=False, inputs=None): # 计算当前张量相对于计算图叶节子节点的梯度
 def register_hook(self, hook): # 注册反向钩子函数，计算完该张量的梯度时，钩子（hook）将被调用。
+def register_post_accumulate_grad_hook(self, hook): # 注册一个梯度累加之后的反向钩子函数 <new>.
 def reinforce(self, reward): # 强制报错
 detach  =  _C.__add_docstr(_C._TensorBase.detach）# Returns a new Tensor, detached from the current graph.
 detach_  =  _C.__add_docstr(_C._TensorBase.detach_) # 将张量从创建它的计算图中分离，使其成为叶节点。
@@ -172,6 +174,7 @@ def unflatten(self, dim, sizes): # 用于将一个连续的一维 Tensor 对象�
 def rename_(self, *names, **rename_map): # rename_ 是一个方法，用于原地修改 Tensor 对象的维度名称。
 def rename(self, *names, **rename_map): # 修改 Tensor 对象的维度名称
 def to_sparse_coo(self): # 用于将一个稠密（dense）的 Tensor 对象转换为 COO（Coordinate）格式的稀疏（sparse）Tensor 对象
+def dim_order(self): 返回一个由整数组成的元组，描述了 self 的维度顺序或物理布局 <new>
 def _update_names(self, names, inplace): # 原地更新 Tensor 对象的维度名称。
 @classmethod
 def __torch_function__(cls, func, types, args=(), kwargs=None): # 对子类进行包装，使得在子类上调用的方法返回一个子类实例，而不是一个 torch.Tensor 实例， 需要自己在该方法内做转化
