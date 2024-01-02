@@ -231,9 +231,9 @@ def add_param_group(self, param_group: Dict[str, Any]) -> None:
 # 3 不同实现与性能优化
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;我们的许多算法都有各种不同的实现方式，针对性能、可读性和/或通用性进行了优化，因此如果用户没有指定特定的实现方式，我们会尝试默认选择当前设备上通常最快的实现方式。<br>
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;我们有三个主要的实现类别：for 循环、foreach（多张量）和融合。最直接的实现方式是对参数进行 for 循环，并进行大块的计算。相比于 for 循环，foreach 实现通常更快，它将参数组合成一个多张量，并一次性执行大块的计算，从而节省了许多连续的内核调用。我们的一些优化器甚至具有更快的融合实现方式，将大块的计算融合成一个内核。我们可以将 foreach 实现看作是在水平方向上进行融合，融合实现则在此基础上在垂直方向上进行融合。<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;我们有三个主要的实现类别：for 循环、foreach（多张量）和 fused。最直接的实现方式是对参数进行 for 循环，并进行大块的计算。相比于 for 循环，foreach 实现通常更快，它将参数组合成一个多张量，并一次性执行大块的计算，从而节省了许多连续的内核调用。我们的一些优化器甚至具有更快的fused实现方式，将大块的计算融合成一个内核。我们可以将 foreach 实现看作是在水平方向上进行融合，fused 实现则在此基础上在垂直方向上进行融合。<br>
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通常情况下，这三种实现方式的性能排序为：融合 > foreach > for 循环。因此，在适用的情况下，我们会默认选择 foreach 而不是 for 循环。适用的条件是 foreach 实现可用，并且用户没有指定任何与实现相关的 kwargs（例如，fused、foreach、differentiable），且所有张量都是本地的并在 CUDA 上。请注意，虽然融合实现比 foreach 还要快，但这些实现是较新的，我们希望在完全切换之前给它们更多的时间来适应。不过，您可以随时尝试它们！<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通常情况下，这三种实现方式的性能排序为：fused -> foreach -> for 循环。因此，在适用的情况下，我们会默认选择 foreach 而不是 for 循环。适用的条件是 foreach 实现可用，并且用户没有指定任何与实现相关的 kwargs（例如，fused、foreach、differentiable），且所有张量都是本地的并在 CUDA 上。请注意，虽然 fused 实现比 foreach 还要快，但这些实现是较新的，我们希望在完全切换之前给它们更多的时间来适应。不过，您可以随时尝试它们！<br>
 
 
 
