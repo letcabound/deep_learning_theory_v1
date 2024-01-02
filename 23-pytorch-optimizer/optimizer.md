@@ -10,7 +10,7 @@
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;要构建一个优化器（Optimizer），您需要提供一个可迭代的对象，其中包含要优化的参数（所有参数应该是 Variable 类型）。然后，您可以指定优化器特定的选项，例如学习率（learning rate）、权重衰减（weight decay）等。<br>
 
-- 代码展示
+- 代码展示 <br>
 ```python
 optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 optimizer = optim.Adam([var1, var2], lr=0.0001)
@@ -19,7 +19,7 @@ optimizer = optim.Adam([var1, var2], lr=0.0001)
 ## 1.2 逐参数选项(Per-parameter options)
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;优化器还支持指定每个参数的选项。为了实现这一点，不要传递一个 Variable 对象的可迭代对象，而是传递一个 dict 对象的可迭代对象。每个 dict 对象将定义一个单独的参数组，并且应包含一个 **"params" key**，其中包含属于该组的参数列表。**其他 key**应与优化器接受的关键字参数匹配，并将用作该组的优化选项。<br>
 
-- 注意(Note)
+- 注意(Note) <br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;您仍然可以将选项作为关键字参数传递。它们将被用作默认值，在未覆盖它们的组中生效。当您只想改变单个选项，同时保持其他参数组之间一致时，这非常有用。<br>
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;例如，当需要指定每个层的学习率时，这非常有用：<br>
@@ -35,7 +35,7 @@ optim.SGD([
 ## 1.3 进行优化步骤
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;所有的优化器都实现了 step() 方法，用于更新参数。它可以通过两种方式使用：<br>
 
-- 方式1：
+- 方式1：<br>
 **optimizer.step()** <br>
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这是大多数优化器支持的简化版本。可以在计算梯度（例如通过 backward()）之后调用该函数，具体代码为：<br>
@@ -49,7 +49,7 @@ for input, target in dataset:
     optimizer.step()
 ```
 
-- 方式2：
+- 方式2：<br>
 **optimizer.step(closure)** <br>
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一些优化算法，如共轭梯度（Conjugate Gradient）和LBFGS，需要多次重新评估函数，因此您需要传递一个闭包（closure），使它们能够重新计算您的模型。闭包应该清除梯度、计算损失并返回它。<br>
@@ -66,16 +66,16 @@ for input, target in dataset:
 ```
 
 # 2 torch.optim base class introduce
-- [CLASStorch.optim.Optimizer(params, defaults)](https://pytorch.org/docs/stable/_modules/torch/optim/optimizer.html#Optimizer)
+- [CLASStorch.optim.Optimizer(params, defaults)](https://pytorch.org/docs/stable/_modules/torch/optim/optimizer.html#Optimizer) <br>
 
 ## 2.1 torch.optim.Optimizer 的输入参数
-- params(可迭代对象)
+- params(可迭代对象) <br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一个包含 torch.Tensor 或 dict 的可迭代对象。指定应该进行优化的张量。
 
 **注意** <br>
 参数需要以具有确定性顺序且在运行之间保持一致的集合形式进行指定。不满足这些属性的对象的示例包括集合（sets）和对字典值进行迭代的迭代器（iterators）。
 
-- defaults(字典)
+- defaults(字典) <br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一个包含优化选项默认值的字典（在参数组未指定时使用）。
 
 ## 2.2 torch.optim.Optimizer 属性
