@@ -72,8 +72,8 @@ for input, target in dataset:
 - params(可迭代对象) <br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一个包含 torch.Tensor 或 dict 的可迭代对象。指定应该进行优化的张量。
 
-**注意** <br>
-参数需要以具有确定性顺序且在运行之间保持一致的集合形式进行指定。不满足这些属性的对象的示例包括集合（sets）和对字典值进行迭代的迭代器（iterators）。
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**注意** <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;参数需要以具有确定性顺序且在运行之间保持一致的集合形式进行指定。不满足这些属性的对象的示例包括集合（sets）和对字典值进行迭代的迭代器（iterators）。<br>
 
 - defaults(字典) <br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一个包含优化选项默认值的字典（在参数组未指定时使用）。
