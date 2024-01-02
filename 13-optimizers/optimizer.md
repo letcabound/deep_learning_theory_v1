@@ -239,7 +239,7 @@ RMSProp（Root Mean Square Propagation）算法中，RMS指的是均方根（Roo
 ## 10.1 算法原理
 ![algorithm14](images/optimizer-algorithm14.jpg)
 
--[论文：DECOUPLED(解耦) WEIGHT DECAY REGULARIZATION](https://arxiv.org/pdf/1711.05101.pdf)
+- [论文：DECOUPLED(解耦) WEIGHT DECAY REGULARIZATION](https://arxiv.org/pdf/1711.05101.pdf)
 
 ## 10.2 pytorch实现
 ![algorithm15](images/optimizer-algorithm15.jpg)
