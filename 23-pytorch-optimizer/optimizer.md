@@ -67,7 +67,7 @@ for input, target in dataset:
 
 # 2 torch.optim base class introduce
 - [CLASStorch.optim.Optimizer(params, defaults)](https://pytorch.org/docs/stable/_modules/torch/optim/optimizer.html#Optimizer)
-- 
+
 ## 2.1 torch.optim.Optimizer 的输入参数
 - params(可迭代对象)
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一个包含 torch.Tensor 或 dict 的可迭代对象。指定应该进行优化的张量。
@@ -158,7 +158,8 @@ def register_state_dict_pre_hook(
 
 # 注册一个状态字典后置钩子，该钩子将在调用:torch.optim.Optimizer.state_dict之后被调用。它应该具有以下签名：
 # hook(optimizer, state_dict) -> state_dict or None
-# 在self上生成state_dict之后，将使用参数self和state_dict调用该钩子。该钩子可以就地修改state_dict，或者可选择返回一个新的state_dict。注册的钩子可用于在返回state_dict之前对其进行后处理。
+# 在self上生成state_dict之后，将使用参数self和state_dict调用该钩子。
+# 该钩子可以就地修改state_dict，或者可选择返回一个新的state_dict。注册的钩子可用于在返回state_dict之前对其进行后处理。
 def register_state_dict_post_hook(
     self,
     hook: Callable[["Optimizer", StateDict], Optional[StateDict]],
