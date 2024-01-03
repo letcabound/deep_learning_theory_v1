@@ -1,4 +1,5 @@
 # 1 pytorch autograd 原理概述
+**参考链接：** <br>
 - [TORCH.AUTOGRAD](https://pytorch.org/docs/stable/index.html)
 - [AUTOGRAD MECHANICS](https://pytorch.org/docs/stable/notes/autograd.html)
 - [Overview of PyTorch Autograd Engine](https://pytorch.org/blog/overview-of-pytorch-autograd-engine/)
@@ -10,7 +11,7 @@
 - 原理简图：<br>
 ![上层原理图](images/autograd-gif1.gif)
 
-- 静态原理图：
+- 静态原理图：<br>
 ![static figure](images/autograd-figure3.jpg)
 
 - 动态原理图: <br>
