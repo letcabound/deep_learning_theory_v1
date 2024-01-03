@@ -1,4 +1,4 @@
-# 0 module 
+# torch.nn.Module 
 - [src code](https://github.com/pytorch/pytorch/tree/270111b7b611d174967ed204776985cefca9c144/torch/nn)
 
 **实践：找到本机pytorch 库 中对应的torch.nn 的位置。** <br>
