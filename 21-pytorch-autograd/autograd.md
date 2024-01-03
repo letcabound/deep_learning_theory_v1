@@ -28,6 +28,8 @@
 - 细节展示
 ![figure2](images/autograd-figure2.jpg)
 
+*(DCG: Dynamic Computation Graph，动态计算图)* <br>
+
 - [参考链接](https://towardsdatascience.com/pytorch-autograd-understanding-the-heart-of-pytorchs-magic-2686cd94ec95)
 - [Vedio: PyTorch Autograd Explained — In-depth Tutorial by Elliot Waite](https://youtu.be/MswxJw-8PvE)
 
