@@ -131,7 +131,6 @@ def module_train():
 5. 需要有 forward函数: 我们具体的实现过程，计算过程。
 
 # 3 nn.Module 属性详解
-## 3.1 nn.Module 属性分析
 ```python
 # 是否生成模块的补丁列表
 # 补丁列表记录了模块中所有可导操作的详细信息，包括输入张量、输出张量、参数、缓冲区等
@@ -173,14 +172,21 @@ call_super_init: bool = False
 # self._compiled_call_impl = torch.compile(self._call_impl, *args, **kwargs)
 _compiled_call_impl : Optional[Callable] = None 
 ```
-
-## 3.2  _parameters 设置机制
+# 4 torch.nn.Module 常用功能
+## 4.1  _parameters 设置机制
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nn.Module 使用了 Python 的 __setattr__ 机制，当在类中定义成员时，__setattr__ 会检测成员的 type 派生于哪些类型。如果派生于 Parameter 类，则被归于 _parameters ；如果派生于 Module ，则划归于 _modules。因此，如果类中定义的成员被封装到Python的普通数据类型中，则不会自动归类，比如：self.layers = [nn.Linear(1024, 80), nn.Linear(80, 10]，检测到是list类型，则会视为普通属性。<br>
 
-## 3.3 _buffers 功能展示
+## 4.2 _buffers 功能展示
 ```python
 import torch
 import torch.nn as nn
+
+'''通常，这用于注册一个不被视为模型参数的缓冲区。例如，BatchNorm 的 running_mean 不是一个参数，但它是模块的状态的一部分。
+缓冲区默认是持久的，并将与参数一起保存。通过将 persistent 属性设置为 False，可以改变这种行为。
+持久性缓冲区和非持久性缓冲区之间唯一的区别是后者不会成为该模块的 state_dict 的一部分。
+可以通过给定的名称将缓冲区作为属性进行访问。
+self.register_buffer('running_mean', torch.zeros(num_features))
+'''
 
 class MyModule(nn.Module):
     def __init__(self):
@@ -229,7 +235,7 @@ for epoch in range(5):
 print(f"Running Mean: {module.running_mean.item()}, Running Variance: {module.running_var.item()}")
 ```
 
-## 3.4 前向钩子函数展示
+## 4.3 前向钩子函数展示
 ```python
 import torch
     import torch.nn as nn
@@ -263,7 +269,7 @@ import torch
     handle.remove()
 ```
 
-## 3.5 反向钩子函数展示
+## 4.4 反向钩子函数展示
 ```python
 import torch
 import torch.nn as nn
@@ -308,22 +314,7 @@ loss.backward()
 hook_handle.remove()
 ```
 
-# 3 nn.Module 方法总结
-
-## 3.1 register_buffer
-```python
-
-'''通常，这用于注册一个不被视为模型参数的缓冲区。例如，BatchNorm 的 running_mean 不是一个参数，但它是模块的状态的一部分。缓冲区默认是持久的，并将与参数一起保存。通过将 persistent 属性设置为 False，可以改变这种行为。持久性缓冲区和非持久性缓冲区之间唯一的区别是后者不会成为该模块的 state_dict 的一部分。
-
-可以通过给定的名称将缓冲区作为属性进行访问。
-'''
-self.register_buffer('running_mean', torch.zeros(num_features))
-
-```
-
-## 3.2 
-
-## 3.10 方法汇总
+## 5 nn.Module 方法全解
 ```python
 # 构造函数 --> 一系列属性初始化
 def __init__(self, *args, **kwargs) -> None:
