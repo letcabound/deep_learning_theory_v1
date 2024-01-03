@@ -55,9 +55,11 @@ for epoch in range(100):
 ## 3 学习率调度器 策略全解 (learning-rate scheduler)
 ## 3.1 lr_scheduler.LambdaLR
 - [pytorch link](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.LambdaLR.html#torch.optim.lr_scheduler.LambdaLR)
-  
+
+- 原理: <br>
 将每个参数组的学习率设置为初始学习率乘以给定函数。当last_epoch=-1时，将初始学习率设置为lr。<br>
 
+- 伪代码展示：<br>
 ```python
 # Assuming optimizer has two groups.
 lambda1 = lambda epoch: epoch // 30
@@ -74,6 +76,7 @@ for epoch in range(100):
 ## 3.2 lr_scheduler.MultiplicativeLR
 - [pytorch link](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.MultiplicativeLR.html#torch.optim.lr_scheduler.MultiplicativeLR)
 
+- 原理: <br>
 将每个参数组的学习率乘以指定函数中给定的因子。当last_epoch=-1时，将初始学习率设置为lr。<br>
 
 - pytorch 实现：<br>
@@ -89,8 +92,10 @@ for epoch in range(100):
 ## 3.3 lr_scheduler.StepLR
 - [pytorch link](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.StepLR.html#torch.optim.lr_scheduler.StepLR)
 
+- 原理: <br>
 每经过 step_size 个周期，将每个参数组的学习率按 gamma 进行衰减。请注意，此衰减可以与来自调度器外部的学习率的其他变化同时发生。当 last_epoch=-1 时，将初始学习率设置为 lr。<br>
 
+- 伪代码展示：<br>
 ```python
 # Assuming optimizer uses lr = 0.05 for all groups
 # lr = 0.05     if epoch < 30
@@ -107,8 +112,10 @@ for epoch in range(100):
 ## 3.4 lr_scheduler.MultiStepLR
 - [pytorch link](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.MultiplicativeLR.html#torch.optim.lr_scheduler.MultiplicativeLR)
 
+- 原理: <br>
 一旦训练周期数达到里程碑（milestones）之一，就会按 gamma 对每个参数组的学习率进行衰减。请注意，此衰减可以与来自调度器外部的学习率的其他变化同时发生。当 last_epoch=-1 时，将初始学习率设置为 lr。<br>
 
+- 伪代码展示：<br>
 ```python
 # Assuming optimizer uses lr = 0.05 for all groups
 # lr = 0.05     if epoch < 30
@@ -124,7 +131,10 @@ for epoch in range(100):
 ## 3.5 lr_scheduler.ConstantLR
 - [pytorch link](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.ConstantLR.html#torch.optim.lr_scheduler.ConstantLR)
 
+- 原理: <br>
 将每个参数组的学习率按一个小的常数因子进行衰减，直到训练周期数达到预定义的里程碑（total_iters）。请注意，此衰减可以与来自调度器外部的学习率的其他变化同时发生。当 last_epoch=-1 时，将初始学习率设置为 lr。 <br>
+
+- 伪代码展示：<br>
 ```python
 # Assuming optimizer uses lr = 0.05 for all groups
 # lr = 0.025   if epoch == 0
@@ -142,8 +152,10 @@ for epoch in range(100):
 ## 3.6 lr_scheduler.LinearLR
 - [pytorch link](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.LinearLR.html#torch.optim.lr_scheduler.LinearLR)
 
+- 原理: <br>
 将每个参数组的学习率通过线性变化的小乘法因子进行衰减，直到训练周期数达到预定义的里程碑（total_iters）。请注意，此衰减可以与来自调度器外部的学习率的其他变化同时发生。当 last_epoch=-1 时，将初始学习率设置为 lr。<br>
 
+- 伪代码展示：<br>
 ```python
 # Assuming optimizer uses lr = 0.05 for all groups
 # lr = 0.025    if epoch == 0
@@ -161,8 +173,10 @@ for epoch in range(100):
 ## 3.7 lr_scheduler.ExponentialLR
 - [pytorch link](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.ExponentialLR.html#torch.optim.lr_scheduler.ExponentialLR)
 
+- 原理: <br>
 每个训练周期，将每个参数组的学习率按 gamma 进行衰减。当 last_epoch=-1 时，将初始学习率设置为 lr。<br>
 
+- 伪代码展示：<br>
 ```python
 import torch
 import torch.optim as optim
@@ -190,10 +204,12 @@ for epoch in range(num_epochs):
 ## 3.8 lr_scheduler.PolynomialLR
 - [pytorch link](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.PolynomialLR.html#torch.optim.lr_scheduler.PolynomialLR)
 
+- 原理: <br>
 使用多项式函数来在给定的 total_iters 中衰减每个参数组的学习率。当 last_epoch=-1 时，将初始学习率设置为 lr。<br>
 
 $$lr = base_lr * (1 - \frac{epoch}{max_{epochs}})^{power}$$
 
+- 伪代码展示：<br>
 ```python
 # Assuming optimizer uses lr = 0.001 for all groups
 # lr = 0.001     if epoch == 0
@@ -212,6 +228,7 @@ for epoch in range(100):
 - [论文地址：Cyclical Learning Rates for Training Neural Networks](https://arxiv.org/abs/1506.01186)
 - [pytorch link](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.CyclicLR.html#torch.optim.lr_scheduler.CyclicLR)
 
+- 原理: <br>
 根据循环学习率策略（CLR），设置每个参数组的学习率。该策略在两个边界之间以恒定的频率循环调整学习率，两个边界之间的距离可以按每次迭代或每个循环来进行缩放。循环学习率策略在每个批次之后改变学习率。在使用批次进行训练后，应调用 step 方法。<br>
 
 该类中有三种内置的策略，如论文中所述：<br>
@@ -219,6 +236,7 @@ for epoch in range(100):
 - “triangular2”：基本的三角循环，每个循环将初始振幅缩小一半。<br>
 - “exp_range”：每个循环迭代时，将初始振幅按  $gamma^{cycle_iterations}$ 进行缩放。<br>
 
+- 伪代码展示：<br>
 ```python
 optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
 scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.01, max_lr=0.1)
@@ -233,7 +251,8 @@ for epoch in range(10):
 - [论文链接: Super-Convergence: Very Fast Training of Neural Networks Using Large Learning Rates](https://arxiv.org/abs/1708.07120)
 - [pytorch link](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.OneCycleLR.html#torch.optim.lr_scheduler.OneCycleLR)
 
-根据1cycle学习率策略设置每个参数组的学习率。one cycle策略将学习率从初始学习率逐渐退火到最大学习率，然后再从最大学习率退火到远低于初始学习率的最小学习率。one cycle学习率策略在每个批次之后改变学习率。在使用批次进行训练后，应调用 step 方法。<br>
+- 原理: <br>
+根据 one cycle学习率策略设置每个参数组的学习率。one cycle策略将学习率从初始学习率逐渐退火到最大学习率，然后再从最大学习率退火到远低于初始学习率的最小学习率。one cycle学习率策略在每个批次之后改变学习率。在使用批次进行训练后，应调用 step 方法。<br>
 
 *注释：退火是一种通过加热和冷却金属来改变其晶体结构，从而改变其性质和硬度的过程。类比到学习率调整中，"退火"的概念表示在训练过程中通过逐渐减小学习率来改变模型的行为和性能。这种减小学习率的过程类似于金属冶炼中的加热和冷却过程，通过逐步调整学习率来"冷却"模型，使其逐渐稳定并达到更好的性能状态。* <br>
 
@@ -245,6 +264,7 @@ for epoch in range(10):
 
 此调度器的默认行为遵循 fastai 对one cycle的实现，其声称“未发表的研究结果显示，仅使用两个阶段可以获得更好的结果”。如果想模仿原论文的行为，请将 three_phase 设置为 True。<br>
 
+- 伪代码展示：<br>
 ```python
 data_loader = torch.utils.data.DataLoader(...)
 optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
@@ -267,6 +287,7 @@ $$\eta_{t}=\eta_{\min }+\frac{1}{2}(\eta_{\max }-\eta_{\min })(1+\cos (\frac{T_{
 - 注意：<br>
 由于该调度器是递归定义的，学习率可以同时被其他操作器在此调度器之外修改. <br>
 
+- 伪代码展示：<br>
 ```python
 import torch
 import torch.optim as optim
@@ -297,11 +318,13 @@ for epoch in range(total_epochs):
 - [论文: SGDR: Stochastic Gradient Descent with Warm Restarts. ](https://arxiv.org/abs/1608.03983)
 - [pytorch link](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.CosineAnnealingWarmRestarts.html#torch.optim.lr_scheduler.CosineAnnealingWarmRestarts)
 
+- 原理: <br>
 带 Warm Restarts 的余弦退火学习率。<br>
 
 - 公式：<br>
 $$\eta_{t}=\eta_{min}+\frac{1}{2}(\eta_{max}-\eta_{min})(1+cos(\frac{T_{cur}}{T_{i}} \pi))$$ 
 
+- 伪代码展示：<br>
 ```python
 scheduler = CosineAnnealingWarmRestarts(optimizer, T_0, T_mult)
 iters = len(dataloader)
@@ -318,6 +341,7 @@ for epoch in range(20):
 
 可直接设定中间过程：<br>
 
+- 伪代码展示：<br>
 ```python
 scheduler = CosineAnnealingWarmRestarts(optimizer, T_0, T_mult)
 for epoch in range(20):
@@ -329,8 +353,10 @@ scheduler.step() # scheduler.step(27), instead of scheduler(20)
 ## 3.13 ReduceLROnPlateau
 - [pytorch link](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.ReduceLROnPlateau.html#torch.optim.lr_scheduler.ReduceLROnPlateau)
 
+- 原理: <br>
 当度量指标停止改善时，减小学习率。一旦学习停滞不前，通过将学习率减小2-10倍，模型通常会受益。该调度器会监测一个度量指标的数值，如果在连续'patience'个训练周期中没有改善，则会降低学习率。<br>
 
+- 伪代码展示：<br>
 ```python
 optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
 scheduler = ReduceLROnPlateau(optimizer, 'min')
@@ -344,8 +370,10 @@ for epoch in range(10):
 ## 3.14 lr_scheduler.ChainedScheduler
 - [pytorch link](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.ChainedScheduler.html#torch.optim.lr_scheduler.ChainedScheduler)
 
+- 原理: <br>
 将学习率调度器的列表链接在一起。它接受一个可链接的学习率调度器列表，并通过一次调用执行它们各自的连续step()函数。<br>
 
+- 伪代码展示：<br>
 ```python
 # Assuming optimizer uses lr = 1. for all groups
 # lr = 0.09     if epoch == 0
@@ -365,8 +393,10 @@ for epoch in range(100):
 ## 3.15 lr_scheduler.SequentialLR
 - [pytorch link](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.SequentialLR.html#torch.optim.lr_scheduler.SequentialLR)
 
+- 原理: <br>
 接收一个调度器列表，这些调度器在优化过程中按顺序调用，并接收里程碑点列表，以提供确切的间隔来反映在给定历元应该调用哪个调度器。<br>
 
+- 伪代码展示：<br>
 ```python
 # Assuming optimizer uses lr = 1. for all groups
 # lr = 0.1     if epoch == 0
