@@ -8,10 +8,46 @@
 
 **思考：为什么要定义torch.nn 模块呢？？？** <br>
 
-## 1.2 Tensor 和 Parameter的区别
+## 1.1 用 torch.nn 解决之前的问题
+```python
+def nn_demo():
+    '''
+    1. 数据准备：输入数据 + lable 数据
+    2. 网络结构的搭建：激活函数 + 损失函数 + 权重初始化；
+    3. 优化器选择；
+    4. 训练策略：学习率的控制 + 梯度清0 + 更新权重 + 正则化；
+    '''
+    input = torch.tensor([5, 10]).reshape(1, 2).to(torch.float32)
+    linear_1 = torch.nn.Linear(2, 3)
+    act_1 = torch.nn.Sigmoid()
+    linear_2 = torch.nn.Linear(3, 2)
+    act_2 = torch.nn.Sigmoid()
+    criteration = torch.nn.MSELoss()
+    
+    optimizer = torch.optim.SGD([{"params": linear_1.parameters()},
+                                 {"params": linear_2.parameters()}], lr=0.5)
+    label = torch.tensor([0.01, 0.99]).reshape(1, 2)
+    
+    for i in range(100):
+        optimizer.zero_grad()
+        x = linear_1(input)
+        x = act_1(x)
+        x = linear_2(x)
+        output = act_2(x)
+        loss = criteration(output, label)
+        loss.backward()
+        optimizer.step() # 更新权重      
+        print(loss)
+```
+
+## 1.2 Tensor 和 Parameter 的区别
+- 通过查阅代码解决；
+
+**思考：上述做法还有优化空间吗？？？** <br>
 
 # 2 定义我们自己的module
 ## 2.1 代码案例
+- 代码案例1：<br>
 ``` python
 class FullConnect(nn.Module):
     def __init__(self, k, n):
@@ -46,6 +82,45 @@ def full_connect_demo():
         optimizer.step()
         print("=======loss: ", loss)
         # print("================model weight grad before update: ", model.full_connect1.weight[0])
+```
+
+- 代码案例2：<br>
+```python
+class ModuleDemo(torch.nn.Module):
+    def __init__(self):
+        super(ModuleDemo, self).__init__()
+        self.linear_1 = torch.nn.Linear(2, 3)
+        self.act_1 = torch.nn.LeakyReLU()
+        self.linear_2 = torch.nn.Linear(3, 2)
+        self.act_2 = torch.nn.LeakyReLU()
+        
+    def forward(self, input):
+        x = self.linear_1(input)
+        x = self.act_1(x)
+        x = self.linear_2(x)
+        output = self.act_2(x)
+        # loss = self.criteration(output, label)
+        return output
+    
+def module_train():
+    torch.manual_seed(0)
+    input = torch.tensor([5, 10]).reshape(1, 2).to(torch.float32)
+    label = torch.tensor([0.01, 0.99]).reshape(1, 2)
+    model = ModuleDemo()
+    criteration = torch.nn.MSELoss()    
+    # optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+    # optimizer = torch.optim.Adagrad(model.parameters(), lr=0.1)
+    # optimizer = torch.optim.Adadelta(model.parameters(), lr=0.1)
+    # optimizer = torch.optim.AdamW(model.parameters(), lr=0.1)
+    
+    for i in range(100):
+        optimizer.zero_grad()
+        output = model(input)
+        loss = criteration(output, label)
+        loss.backward()
+        optimizer.step()
+        print(f"=========loss[{i}]: {loss}")
 ```
 
 ## 2.2 customer layer 要点
