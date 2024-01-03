@@ -192,7 +192,7 @@ for epoch in range(num_epochs):
 
 使用多项式函数来在给定的 total_iters 中衰减每个参数组的学习率。当 last_epoch=-1 时，将初始学习率设置为 lr。<br>
 
-$$lr = base_lr * (1 - \frac{epoch}{max_epochs})^{power}$$
+$$lr = base_lr * (1 - \frac{epoch}{max_{epochs}})^{power}$$
 
 ```python
 # Assuming optimizer uses lr = 0.001 for all groups
