@@ -46,7 +46,128 @@ print("data: ", data2)
   print("numpy tensor: ", tensor_numpy)
 ```
 
-# 2 Tensor 的属性
+```
+def numpy_with_torch_tensor():
+  ndarray = np.array([1, 3, 4])
+  tensor = torch.tensor(ndarray)
+  tensor_from_numpy = torch.from_numpy(ndarray)
+  
+  print("numpy data_ptr: ", ndarray.ctypes.data)
+  print("torch data_ptr: ", tensor.data_ptr())
+  print("tensor_from numpy data_ptr: ", tensor_from_numpy.data_ptr())
+
+  ndarray_from_torch = tensor_from_numpy.numpy()
+  print("ndarray_from_torch data_ptr: ",   ndarray_from_torch.ctypes.data)
+```
+
+# 2 工程实践
+- 找到 pytorch Tensor 中源码定义位置；
+- 找到 Tensor 有哪些属性
+- 找到 Tensor 有哪些方法可以调用；
+- 比较本地 pytorch Tensor 源码 和 github pytroch 代码仓 的Tensor 源码一样吗？
+
+# 3 Tensor 中的 to 方法
+## 3.1 数据类型转化
+```python
+def tensor_to_demo():
+  tensor = torch.ones(4, 5)
+
+  tensor_0 = tensor.to(torch.int32)
+  tensor_2 = tensor.to(tensor_0)
+  # float16: 1bit(符号位) + 5bit(指数位) + 10bit(尾数) 
+  # bfloat16：1bit(符号位) + 8bit(指数位) + 7bit(尾数)
+  # BF16背后的想法是通过降低数字的精度来减少计算能力和将张量相乘所需的能源消耗
+  tensor_1 = tensor.to(torch.bfloat16) # 数据类型转化
+```
+
+## 3.2 device 转化
+```python
+def tensor_device_demo():
+  if torch.cuda.is_available():
+    device = torch.device("cuda:0")
+  else:
+    device = torch.device("cpu")
+
+  tensor = torch.randn(4, 5)
+  tensor_0 = tensor.to(device)
+  tensor_1 = tensor.to('cpu')
+  tensor_2 = tensor.cuda()
+  tensor_3 = tensor.to(tensor_0)
+```
+
+# 4 Tensor 讲解
+
+**思考：如果让你设计一个工程的上数据结构来表示Tensor，你会如何设计呢？？？** <br>
+
+## 4.1 两个角度认识 Tensor
+- Tensor 的 meta data
+- Tensor 的 raw data
+
+- example
+```python
+def tensor_struct():
+  r'''
+    meta_data / raw_data
+  ''' 
+  nd_array = np.array([[1, 2, 3], [4, 5, 6]])
+  # tensor = torch.tensor(nd_array) # deep copy
+  tensor = torch.from_numpy(nd_array)
+  # meta_data
+  # print("shape:", tensor.shape) #meta data
+  # print("dtype: ", tensor.dtype) # met
+  # print("stride: ", tensor.stride())
+  # print("device: ", tensor.device)
+  # .... 其它参考 /lib/python3.8/site-packages/torch/_C/__init__.pyi
+  
+  # tensor / ndarray
+  # 1. meta_data + raw_data;
+  # 2 meta_data: shape/dtype/stride/dim/device ...
+  # 3. raw_data: data_ptr
+
+  # raw data
+  print("pytorch data: \n", tensor)
+  # print("pytorch raw data: \n", tensor.storage())
+  print("numpy raw data_ptr: ", nd_array.ctypes.data)
+  print("pytroch raw data_ptr: ", tensor.data_ptr())
+  
+  print("numpy data id", id(nd_array))
+  print("pytorch data id", id(tensor))
+  
+  tensor2 = tensor.reshape(1, 6)
+  print("tensor id: ", id(tensor))
+  print("tensor2 id: ", id(tensor2))
+  print("tensor pointer addr: ", tensor.data_ptr())
+  print("tensor2 pointer addr: ", tensor2.data_ptr())
+```
+
+## 4.2 代码实践之：视图到底是什么
+
+**思考：如何判断两个tensor 是否是同一个tensor** <br>
+
+**思考：numpy 中大家都了解过 视图 的概念，那视图的底层逻辑到底是什么呢？？？** <br>
+
+- reshape、view 过程中发生了什么 ？？？ <br>
+
+- 原理图示：<br>
+
+![figure1](images/tensor-figure1.jpg)
+
+## 4.3 代码实践之：Tensor 中数据的连续性
+
+- reshape、view、permute、transpose的区别 <br>
+
+## 5 Tensor 运算的几种主要类型
+- 矩阵型运算
+- Pointwise 型运算
+- broadcast 型运算
+- inplace 型运算
+- Allreduce 型运算
+- type 类型运算
+- bit 型运算
+- shape 和 轴变换
+- ...
+
+# 6 Tensor 的属性全解
 - [pytorch Tensor class](https://github.com/pytorch/pytorch/blob/main/torch/_tensor.py)
 - [pytorch C TensorBase](https://github.com/pytorch/pytorch/blob/main/torch/_C/__init__.pyi.in)
 - [官方文档](https://pytorch.org/docs/stable/tensors.html)
@@ -95,7 +216,7 @@ print(aa[1].output_nr)
 ```
 
 
-# 3 外层 Tensor 方法汇总
+# 7 外层 Tensor 方法汇总
 ```python
 def __deepcopy__(self, memo):   #自定义对象在深拷贝（deep copy）操作中的行为
 def__reduce_ex__(self, proto):  #自定义对象在序列化和反序列化过程中的行为
@@ -184,7 +305,7 @@ def __dlpack_device__(self) -> Tuple[enum.IntEnum, int]: # 用于获取 Tensor �
 __module__ = "torch" # 用于指示 Tensor 对象所属的模块
 ```
 
-# 4 TensorBase 方法汇总
+# 7 TensorBase 方法汇总
 - [TensorBase 链接](https://github.com/pytorch/pytorch/blob/main/torch/_C/__init__.pyi.in)
 - [c++ api](https://pytorch.org/cppdocs/notes/tensor_basics.html)
 - [c++ functions](https://pytorch.org/cppdocs/api/file_build_aten_src_ATen_Functions.h.html#file-build-aten-src-aten-functions-h)
