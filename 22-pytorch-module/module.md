@@ -130,7 +130,23 @@ def module_train():
 4. 在子类上进行赋值之前，必须先调用父类的 __init__()；
 5. 需要有 forward函数: 我们具体的实现过程，计算过程。
 
-# 3 nn.Module 属性详解
+# 3 nn.Module 中的容器
+```python
+def sequential_demo():
+    seq_modules = nn.Sequential(
+        nn.Linear(28*28, 512),
+        nn.ReLU(),
+        nn.Linear(512, 512),
+        nn.ReLU(),
+        nn.Linear(512, 10)
+    )
+        
+    input_image = torch.rand(3,28*28)
+    logits = seq_modules(input_image)
+    print("logits: ", logits.shape)
+```
+
+# 4 nn.Module 属性详解
 ```python
 # 是否生成模块的补丁列表
 # 补丁列表记录了模块中所有可导操作的详细信息，包括输入张量、输出张量、参数、缓冲区等
@@ -172,11 +188,11 @@ call_super_init: bool = False
 # self._compiled_call_impl = torch.compile(self._call_impl, *args, **kwargs)
 _compiled_call_impl : Optional[Callable] = None 
 ```
-# 4 torch.nn.Module 常用功能
-## 4.1  _parameters 设置机制
+# 5 torch.nn.Module 常用功能
+## 5.1  _parameters 设置机制
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nn.Module 使用了 Python 的 __setattr__ 机制，当在类中定义成员时，__setattr__ 会检测成员的 type 派生于哪些类型。如果派生于 Parameter 类，则被归于 _parameters ；如果派生于 Module ，则划归于 _modules。因此，如果类中定义的成员被封装到Python的普通数据类型中，则不会自动归类，比如：self.layers = [nn.Linear(1024, 80), nn.Linear(80, 10]，检测到是list类型，则会视为普通属性。<br>
 
-## 4.2 _buffers 功能展示
+## 5.2 _buffers 功能展示
 ```python
 import torch
 import torch.nn as nn
@@ -235,7 +251,7 @@ for epoch in range(5):
 print(f"Running Mean: {module.running_mean.item()}, Running Variance: {module.running_var.item()}")
 ```
 
-## 4.3 前向钩子函数展示
+## 5.3 前向钩子函数展示
 ```python
 import torch
     import torch.nn as nn
@@ -269,7 +285,7 @@ import torch
     handle.remove()
 ```
 
-## 4.4 反向钩子函数展示
+## 5.4 反向钩子函数展示
 ```python
 import torch
 import torch.nn as nn
@@ -314,7 +330,7 @@ loss.backward()
 hook_handle.remove()
 ```
 
-## 5 nn.Module 方法全解
+## 6 nn.Module 方法全解
 ```python
 # 构造函数 --> 一系列属性初始化
 def __init__(self, *args, **kwargs) -> None:
