@@ -84,6 +84,10 @@ def save_demo_v1():
 ```python
 def load_demo_v1():
     model = torch.load("mnist.pt")
+
+    device = torch.device("cuda")
+    model = torch.load('mnist.pt', map_location=device) # 直接将模型加载到device上
+    
     input = torch.rand(1, 1, 28, 28)
     output = model(input)
     print(f"output shape: {output.shape}")
@@ -153,3 +157,15 @@ def load_trace_model():
     print("load model succsessfully !")
     print("output: ", output)
 ```
+
+# 6 通用格式onnx的保存
+```python
+import torch
+import torchvision
+
+model = torchvision.models.resnet18()
+input_tensor = torch.randn(1, 3, 224, 224)
+torch.onnx.export(model, input_tensor, "model.onnx")
+```
+
+
