@@ -159,6 +159,7 @@ def load_trace_model():
 ```
 
 # 6 通用格式onnx的保存
+## 6.1 保存onnx 静态图模型
 ```python
 import torch
 import torchvision
@@ -168,4 +169,38 @@ input_tensor = torch.randn(1, 3, 224, 224)
 torch.onnx.export(model, input_tensor, "model.onnx")
 ```
 
+## 6.2 运行onnx 模型
+- 方式1：<br>
+```python
+def run(model_path, image_path):
+  session = onnxruntime.InferenceSession(model_path)
+  input_data = []
+  input_data.append(image_process(image_path))
+  input_name_1 = session.get_inputs()[0].name
+  outputs = session.run([],{input_name_1:input_data})
+  return outputs
+```
+
+- 方式2：<br>
+```
+def onnx_model_infer(input_data_list : list, onnx_model):
+  session = onnxruntime.InferenceSession(onnx_model.SerializeToString())
+  input_name = [item.name for item in session.get_inputs()]
+  assert(len(input_data_list) == len(input_name))
+  input_dict = dict()
+  for i, data in enumerate(input_data_list):
+    input_dict[input_name[i]] = data
+
+  outputs = session.run([], input_feed = input_dict)
+  print("onnx_model_infer run successfully !!!")
+  return outputs
+```
+
+## 6.3 shape infer
+```python
+def shape_infer(onnx_model):
+  model = onnx.shape_inference.infer_shapes(onnx_model)
+  print("shape_infer fun run successfully !!!")
+  return model
+```
 
