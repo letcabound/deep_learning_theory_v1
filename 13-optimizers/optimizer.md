@@ -246,7 +246,7 @@ RMSProp（Root Mean Square Propagation）算法中，RMS指的是均方根（Roo
 
 # 11 Optimizer 收敛趋势对比图
 
-![gif3](images/optimizer-gif3.gif)
+![gif3](images/optimizer-gif2.gif)
 
 # 12 参考文献
 - [Optimization Algorithms](https://prvnk10.medium.com/optimization-algorithms-part-1-4b8aba0e40c6)
