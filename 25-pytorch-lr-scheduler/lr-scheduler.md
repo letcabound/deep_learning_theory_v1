@@ -1,5 +1,5 @@
 # learning rate 调整方案
-
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在深度学习中，学习率调整是一种重要的技术，用于优化模型的训练过程。学习率是控制模型参数更新幅度的超参数，它决定了在每次参数更新中应用的梯度下降的步长。合适的学习率调整策略可以帮助模型更快地收敛或避免陷入局部最优点。<br>
 
 
 # 2 pytorch中 torch.optim.lr_scheduler 使用方法
@@ -95,6 +95,9 @@ for epoch in range(100):
 - 原理: <br>
 每经过 step_size 个周期，将每个参数组的学习率按 gamma 进行衰减。请注意，此衰减可以与来自调度器外部的学习率的其他变化同时发生。当 last_epoch=-1 时，将初始学习率设置为 lr。<br>
 
+- 图示：<br>
+![figure1](images/lr-figure1.jpg)
+
 - 伪代码展示：<br>
 ```python
 # Assuming optimizer uses lr = 0.05 for all groups
@@ -114,6 +117,9 @@ for epoch in range(100):
 
 - 原理: <br>
 一旦训练周期数达到里程碑（milestones）之一，就会按 gamma 对每个参数组的学习率进行衰减。请注意，此衰减可以与来自调度器外部的学习率的其他变化同时发生。当 last_epoch=-1 时，将初始学习率设置为 lr。<br>
+
+- 图示：<br>
+![figure2](images/lr-figure2.jpg)
 
 - 伪代码展示：<br>
 ```python
@@ -155,6 +161,9 @@ for epoch in range(100):
 - 原理: <br>
 将每个参数组的学习率通过线性变化的小乘法因子进行衰减，直到训练周期数达到预定义的里程碑（total_iters）。请注意，此衰减可以与来自调度器外部的学习率的其他变化同时发生。当 last_epoch=-1 时，将初始学习率设置为 lr。<br>
 
+- 图示：<br>
+![figure4](images/lr-figure4.jpg)
+
 - 伪代码展示：<br>
 ```python
 # Assuming optimizer uses lr = 0.05 for all groups
@@ -175,6 +184,9 @@ for epoch in range(100):
 
 - 原理: <br>
 每个训练周期，将每个参数组的学习率按 gamma 进行衰减。当 last_epoch=-1 时，将初始学习率设置为 lr。<br>
+
+- 图示：<br>
+![figure3](images/lr-figure3.jpg)
 
 - 伪代码展示：<br>
 ```python
@@ -231,6 +243,9 @@ for epoch in range(100):
 - 原理: <br>
 根据循环学习率策略（CLR），设置每个参数组的学习率。该策略在两个边界之间以恒定的频率循环调整学习率，两个边界之间的距离可以按每次迭代或每个循环来进行缩放。循环学习率策略在每个批次之后改变学习率。在使用批次进行训练后，应调用 step 方法。<br>
 
+- 图示：<br>
+![figure5](images/lr-figure5.jpg)
+
 该类中有三种内置的策略，如论文中所述：<br>
 - “triangular”：基本的三角循环，无振幅缩放。<br>
 - “triangular2”：基本的三角循环，每个循环将初始振幅缩小一半。<br>
@@ -253,6 +268,9 @@ for epoch in range(10):
 
 - 原理: <br>
 根据 one cycle学习率策略设置每个参数组的学习率。one cycle策略将学习率从初始学习率逐渐退火到最大学习率，然后再从最大学习率退火到远低于初始学习率的最小学习率。one cycle学习率策略在每个批次之后改变学习率。在使用批次进行训练后，应调用 step 方法。<br>
+
+- 图示：<br>
+![figure6](images/lr-figure6.jpg)
 
 *注释：退火是一种通过加热和冷却金属来改变其晶体结构，从而改变其性质和硬度的过程。类比到学习率调整中，"退火"的概念表示在训练过程中通过逐渐减小学习率来改变模型的行为和性能。这种减小学习率的过程类似于金属冶炼中的加热和冷却过程，通过逐步调整学习率来"冷却"模型，使其逐渐稳定并达到更好的性能状态。* <br>
 
@@ -287,6 +305,12 @@ $$\eta_{t}=\eta_{\min }+\frac{1}{2}(\eta_{\max }-\eta_{\min })(1+\cos (\frac{T_{
 - 注意：<br>
 由于该调度器是递归定义的，学习率可以同时被其他操作器在此调度器之外修改. <br>
 
+- 图示：<br>
+![figure7](images/lr-figure7.jpg)
+
+- 可有效解决鞍点问题：<br>
+![figure8](images/lr-figure8.jpg)
+
 - 伪代码展示：<br>
 ```python
 import torch
@@ -320,6 +344,9 @@ for epoch in range(total_epochs):
 
 - 原理: <br>
 带 Warm Restarts 的余弦退火学习率。<br>
+
+- 图示：<br>
+![figure9](images/lr-figure9.jpg)
 
 - 公式：<br>
 $$\eta_{t}=\eta_{min}+\frac{1}{2}(\eta_{max}-\eta_{min})(1+cos(\frac{T_{cur}}{T_{i}} \pi))$$ 
