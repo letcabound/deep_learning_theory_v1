@@ -202,7 +202,6 @@ RMSProp（Root Mean Square Propagation）算法中，RMS指的是均方根（Roo
 - [pytorch link](https://pytorch.org/docs/stable/generated/torch.optim.Adadelta.html#torch.optim.Adadelta)
 - [论文：ADADELTA: An Adaptive Learning Rate Method](https://arxiv.org/pdf/1212.5701.pdf)
 
-
 # 8  不同优化算法效果对比
 ## 8.1 loss 对比图
 ![figure9](images/optimizer-figure9.jpg)
@@ -234,7 +233,6 @@ RMSProp（Root Mean Square Propagation）算法中，RMS指的是均方根（Roo
 ## 9.4 效果展示
 ![figure10](images/optimizer-figure10.jpg)
 
-
 # 10 AdamW
 ## 10.1 算法原理
 ![algorithm14](images/optimizer-algorithm14.jpg)
@@ -245,16 +243,15 @@ RMSProp（Root Mean Square Propagation）算法中，RMS指的是均方根（Roo
 ![algorithm15](images/optimizer-algorithm15.jpg)
 
 - [pytorch link](https://pytorch.org/docs/stable/generated/torch.optim.AdamW.html#torch.optim.AdamW)
- 
-# 11 参考文献
+
+# 11 Optimizer 收敛趋势对比图
+
+![gif3](images/optimizer-gif3.gif)
+
+# 12 参考文献
 - [Optimization Algorithms](https://prvnk10.medium.com/optimization-algorithms-part-1-4b8aba0e40c6)
 - [github optimize demo](https://github.com/prajinkhadka/Optimization_Algorithms_Visualization)
 - [论文：An overview of gradient descent optimization algorithms](https://arxiv.org/pdf/1609.04747.pdf)
 - [Machine Learning Optimization Methods : Mechanics, Pros, And Cons](https://salmenzouari.medium.com/machine-learning-optimization-methods-mechanics-pros-and-cons-81b720194292)
 
-
-# 11 pytorch 中Optim的用法
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;torch.optim是一个实现各种优化算法的包。已经支持了最常用的方法，并且接口足够通用，以便将来也可以轻松地集成更复杂的方法。<br>
-
-- [pytorch optim](https://pytorch.org/docs/stable/optim.html)
 
