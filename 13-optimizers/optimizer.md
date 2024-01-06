@@ -22,7 +22,7 @@ $$θ = θ - α * \Delta J(θ)$$
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BGD是批量梯度下降（Batch Gradient Descent）的缩写，是一种基本的梯度下降优化算法。在批量梯度下降中，每次参数更新时使用整个训练数据集的梯度. <br>
 
 **计算公式** <br>
-\theta_{t+1}=\theta_{t}-\alpha_{t} \cdot \sum_{i=1}^{n} \nabla_{\theta} J_{i} (\theta, x^{i}, y^{i})
+![formula1](images/optimizer-formula1.jpg)
 
 **图示** <br>
 ![figure3](images/optimizer-figure3.jpg)
@@ -37,7 +37,7 @@ $$θ = θ - α * \Delta J(θ)$$
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;随机梯度下降（Stochastic Gradient Descent，SGD）是一种基于随机采样的梯度下降优化算法。与批量梯度下降（BGD）每次都使用整个训练数据集的梯度相比，SGD每次仅使用单个样本或一小批样本的梯度进行参数更新。<br>
 
 **计算公式** <br>
-\theta_{t+1}=\theta_{t}-\alpha_{t} \cdot \nabla_{\theta} J_{i} (\theta, x^{i}, y^{i})
+![formula2](images/optimizer-formula2.jpg)
 
 **图示** <br>
 ![figure4](images/optimizer-figure4.jpg)
