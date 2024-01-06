@@ -1,6 +1,7 @@
 # learning rate 调整方案
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在深度学习中，学习率调整是一种重要的技术，用于优化模型的训练过程。学习率是控制模型参数更新幅度的超参数，它决定了在每次参数更新中应用的梯度下降的步长。合适的学习率调整策略可以帮助模型更快地收敛或避免陷入局部最优点。<br>
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;学习率调度（Learning Rate Scheduling）：学习率调度是根据训练的迭代次数或验证误差的变化动态地调整学习率。<br>
 
 # 2 pytorch中 torch.optim.lr_scheduler 使用方法
 - [pytorch link](https://pytorch.org/docs/stable/optim.html#module-torch.optim)
