@@ -209,9 +209,9 @@ RMSProp（Root Mean Square Propagation）算法中，RMS指的是均方根（Roo
 
 ## 8.2 收敛过程对比
 
-![gif6](images/optimizer-gif6.jpg)
+![gif6](images/optimizer-gif6.gif)
 
-![gif3](images/optimizer-gif3.jpg)
+![gif3](images/optimizer-gif3.gif)
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adagrad, Adadelta, RMSprop 几乎很快就找到了正确的方向并前进，收敛速度也相当快，而其它方法要么很慢，要么走了很多弯路才找到。
 
