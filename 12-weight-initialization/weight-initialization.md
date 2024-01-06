@@ -183,7 +183,7 @@ $$W \sim U[-\sqrt{\frac{6}{n_{i}}}, \sqrt{\frac{6}{n_{i}}}] $$
 
 - 考虑反向传方差相等时公式：<br>
 
-$$W \sim U[-\sqrt{\frac{6}{n_{i}}}, \sqrt{\frac{6}{\hat{n_{i}}}}] $$
+$$W \sim U[-\sqrt{\frac{6}{n_{i+1}}}, \sqrt{\frac{6}{\hat{n_{i+1}}}}] $$
 
 # 8 初始化策略选择
 ![weight init](https://s2.ax1x.com/2019/11/20/MfIhi6.png)
