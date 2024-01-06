@@ -63,11 +63,11 @@ $$\forall(i, i^{\prime}), Var[\frac{\partial Cost}{\partial s^{i}}]=Var[\frac{\p
 # 6 塞维尔初始化(Xavier initialization)
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;假设一个神经元，其输入为 $z_{1}, z_{2}, \dots, z_{N}$ , 其权重值为 $w_{1}, w_{2}, \dots, w_{N}$ , 均为独立同分布的， 激活函数 f， 神经元输出 y，那么可得到输出 y的数学表达式：<br>
 
-$$y=f(w_{1} * z_{1} + \cdot s + w_{N} * z_{N})$$
+$$y=f(w_{1} * z_{1} + \cdot  + w_{N} * z_{N})$$
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;按照Glorot条件，我们要寻找w的分布使得输出y与输入z的方差保持一致。同时做如下假设：f 为tanh激活函数， $w_{i}$ 独立同分布， $z_{i}$ 独立同分布，且均值都为0. 则根据Gorot 条件推导如下：<br>
 
-![glorot 公式推导](glorot-formula1.jpg)
+![glorot 公式推导](images/glorot-formula1.jpg)
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;反向公式推导类似，于是我们可以得到两组结论：<br>
 
