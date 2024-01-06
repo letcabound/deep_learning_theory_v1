@@ -73,7 +73,7 @@ $$θ = θ - α * \Delta J(θ)$$
 
 ![algorithm1](images/optimizer-algorithm1.jpg)
 
-实践中, α 的一般取值为0:5，0:9 和0:99。
+实践中, α 的一般取值为0.5，0.9 和0.99。
 
 ## 2.2 算法图示
 ![figure6](images/optimizer-figure6.jpg)
