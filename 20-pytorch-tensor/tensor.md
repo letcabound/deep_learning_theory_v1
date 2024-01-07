@@ -305,12 +305,12 @@ def __dlpack_device__(self) -> Tuple[enum.IntEnum, int]: # 用于获取 Tensor �
 __module__ = "torch" # 用于指示 Tensor 对象所属的模块
 ```
 
-# 7 TensorBase 方法汇总
+# 8 TensorBase 方法汇总
 - [TensorBase 链接](https://github.com/pytorch/pytorch/blob/main/torch/_C/__init__.pyi.in)
 - [c++ api](https://pytorch.org/cppdocs/notes/tensor_basics.html)
 - [c++ functions](https://pytorch.org/cppdocs/api/file_build_aten_src_ATen_Functions.h.html#file-build-aten-src-aten-functions-h)
 
-# 4.1 魔术方法（基本运算符 + 构造函数 + 索引）
+## 8.1 魔术方法（基本运算符 + 构造函数 + 索引）
 ```python
 def __abs__(self) -> Tensor: ... # 取绝对值
 def __add__(self, other: Any) -> Tensor: ...
@@ -424,7 +424,7 @@ def __xor__(self, other: Union[Number, _complex]) -> Tensor:
 def __xor__(self, other: Any) -> Tensor: ...
 ```
 
-## 4.2 私有方法
+## 8.2 私有方法
 ```python
 # 执行矩阵乘法和加法操作，并应用激活函数。
 # 首先：执行矩阵乘法操作：result = torch.matmul(mat1, mat2)；
@@ -476,7 +476,7 @@ nt = torch.nested.nested_tensor([a, b], dtype=torch.float32)
 ```
 - [sparse tensor](https://pytorch.org/docs/stable/sparse.html#sparse-coo-docs)
 
-# 4.3 Tensor 的 对外API接口
+## 8.3 Tensor 的 对外API接口
 ```python
 def abs(self) -> Tensor: ...
 def abs_(self) -> Tensor: ... # 原地取绝对值
