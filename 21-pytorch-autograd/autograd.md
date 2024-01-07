@@ -15,7 +15,7 @@
 ![static figure](images/autograd-figure3.jpg)
 
 - 动态原理图: <br>
-![dynamic gif](images/autograd-gif1.gif)
+![dynamic gif2](images/autograd-gif2.gif)
 
 - [参考：How Computational Graphs are Constructed in PyTorch](https://pytorch.org/blog/computational-graphs-constructed-in-pytorch/)
 - [参考：Overview of PyTorch Autograd Engine](https://pytorch.org/blog/overview-of-pytorch-autograd-engine/)
