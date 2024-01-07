@@ -174,10 +174,12 @@ RMSProp（Root Mean Square Propagation）算法中，RMS指的是均方根（Roo
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;相比于AdaGrad，使用移动平均引入了一个新的超参数ρ，用来控制移动平均的长度范围。<br>
 ## 6.2 算法流程
-**RMSProp 的标准形式** <br>
+**RMSProp 的标准形式** <br> 
+
 ![algorithm6](images/optimizer-algorithm6.jpg)
 
 **带Nesterov 动量的形式** <br>
+
 ![algorithm7](images/optimizer-algorithm7.jpg)
 
 - Hinton 建议设定 γ 为 0.9, 学习率 η 为 0.001。
