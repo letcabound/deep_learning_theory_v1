@@ -128,6 +128,8 @@ General Language Understanding Evaluation benchmark (GLUE),
 - 模型大小的发展趋势
 ![figure7](images/figure7.jpg)
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;大语言模型的快速发展对自然语言处理领域产生了革命性的影响 [12, 128, 131]。 这些强大的模型在各种 NLP 任务 —— 从自然语言理解（NLU）到生成式任务（generation tasks）—— 中都展现出了巨大的潜力，甚至为通用人工智能（AGI）铺平了道路。 但另一方面，如何有效和高效地利用这些模型，就需要了解它们的实际能力和局限性， 还需要考虑具体 NLP 任务及其涉及的数据。<br>
+
 - 大模型概述
 ![figure8](images/figure8.jpg)
 
