@@ -1,4 +1,4 @@
-![image](https://github.com/Elvin-Ma/deep_learning_theory/assets/54735483/df482890-fe0e-4232-ae6c-24713127ff4e)# 1 模型跑通
+# 1 模型跑通
 ```shell
 git clone https://github.com/Tongjilibo/bert4torch.git
 
