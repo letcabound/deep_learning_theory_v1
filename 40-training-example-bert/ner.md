@@ -209,3 +209,167 @@ $$Seq_{t}=T_{I-Person,B-Person}+T_{O, I-Person}+T_{O, O}+T_{O, B-Organization}+T
 
 # 5 代码详解
 
+## 5.1 真实路径得分计算
+
+```python
+    def _compute_score(self, emissions: torch.Tensor, tags: torch.LongTensor, mask: torch.ByteTensor) -> torch.Tensor:
+        # emissions: (batch_size, seq_length, num_tags) # 发射分数
+        # tags: (batch_size, seq_length) # 标签
+        # mask: (batch_size, seq_length) # 掩模
+        batch_size, seq_length = tags.shape
+        mask = mask.float()
+
+        # Start transition score and first emission 初始化 转移分数 和 第一个发射分数
+        # shape: (batch_size,)
+        score = self.start_transitions[tags[:, 0]] # 收单词转移分数
+        score += emissions[torch.arange(batch_size), 0, tags[:, 0]] # 首单词发射分数
+
+        for i in range(1, seq_length):
+            # Transition score to next tag, only added if next timestep is valid (mask == 1)
+            # shape: (batch_size,)
+            score += self.transitions[tags[:, i - 1], tags[:, i]] * mask[:, i] # 当前单词转移分数
+            # Emission score for next tag, only added if next timestep is valid (mask == 1) 
+            # shape: (batch_size,)
+            score += emissions[torch.arange(batch_size), i, tags[:, i]] * mask[:, i] # 当前单词发射分数
+
+        # End transition score
+        # shape: (batch_size,)
+        seq_ends = mask.long().sum(dim=1) - 1
+        # shape: (batch_size,)
+        last_tags = tags[torch.arange(batch_size), seq_ends] 
+        # shape: (batch_size,)
+        score += self.end_transitions[last_tags] # 最后单词转移分数
+
+        return score 
+```
+
+## 5.2 总路径得分计算
+
+```python
+def _compute_normalizer(self, emissions: torch.Tensor, mask: torch.ByteTensor) -> torch.Tensor:
+        # emissions: (batch_size, seq_length, num_tags)
+        # mask: (batch_size, seq_length)
+        seq_length = emissions.size(1) # 总的 seq 长度
+
+        # Start transition score and first emission; score has size of
+        # (batch_size, num_tags) where for each batch, the j-th column stores
+        # the score that the first timestep has tag j
+        # shape: (batch_size, num_tags)
+        score = self.start_transitions + emissions[:, 0] # 初始分数
+
+        for i in range(1, seq_length):
+            # Broadcast score for every possible next tag
+            # shape: (batch_size, num_tags, 1)
+            broadcast_score = score.unsqueeze(2) # 将 shape: (batch_size, num_tags) -->  # shape: (batch_size, num_tags, 1)
+
+            # Broadcast emission score for every possible current tag
+            # shape: (batch_size, 1, num_tags)
+            broadcast_emissions = emissions[:, i].unsqueeze(1) # 当前seq 的发生分数 在 1 轴上 unsqueeze
+
+            # Compute the score tensor of size (batch_size, num_tags, num_tags) where
+            # for each sample, entry at row i and column j stores the sum of scores of all
+            # possible tag sequences so far that end with transitioning from tag i to tag j
+            # and emitting
+            # shape: (batch_size, num_tags, num_tags)
+            next_score = broadcast_score + self.transitions + broadcast_emissions
+
+            # Sum over all possible current tags, but we're in score space, so a sum
+            # becomes a log-sum-exp: for each sample, entry i stores the sum of scores of
+            # all possible tag sequences so far, that end in tag i
+            # shape: (batch_size, num_tags)
+            next_score = torch.logsumexp(next_score, dim=1)
+
+            # Set score to the next score if this timestep is valid (mask == 1)
+            # shape: (batch_size, num_tags)
+            score = torch.where(mask[:, i].unsqueeze(1).bool(), next_score, score)
+
+        # End transition score
+        # shape: (batch_size, num_tags)
+        score += self.end_transitions
+
+        # Sum (log-sum-exp) over all possible tags
+        # shape: (batch_size,)
+        return torch.logsumexp(score, dim=1)
+```
+
+## 5.3 Viterbi 解码过程
+```python
+def _viterbi_decode_nbest(self, emissions: torch.FloatTensor, mask: torch.ByteTensor,
+                              nbest: int, pad_tag: Optional[int] = None) -> List[List[List[int]]]:
+        # emissions: (batch_size, seq_length, num_tags)
+        # mask: (batch_size, seq_length)
+        # return: (nbest, batch_size, seq_length)
+        if pad_tag is None:
+            pad_tag = 0
+
+        device = emissions.device
+        batch_size, seq_length = mask.shape
+
+        # Start transition and first emission
+        # shape: (batch_size, num_tags)
+        score = self.start_transitions + emissions[:, 0]
+        history_idx = torch.zeros((batch_size, seq_length, self.num_tags, nbest), dtype=torch.long, device=device)
+        oor_idx = torch.zeros((batch_size, self.num_tags, nbest), dtype=torch.long, device=device)
+        oor_tag = torch.full((batch_size, seq_length, nbest), pad_tag, dtype=torch.long, device=device)
+
+        # - score is a tensor of size (batch_size, num_tags) where for every batch,
+        #   value at column j stores the score of the best tag sequence so far that ends
+        #   with tag j
+        # - history_idx saves where the best tags candidate transitioned from; this is used
+        #   when we trace back the best tag sequence
+        # - oor_idx saves the best tags candidate transitioned from at the positions
+        #   where mask is 0, i.e. out of range (oor)
+
+        # Viterbi algorithm recursive case: we compute the score of the best tag sequence
+        # for every possible next tag
+        for i in range(1, seq_length):
+            if i == 1:
+                broadcast_score = score.unsqueeze(-1)
+                broadcast_emission = emissions[:, i].unsqueeze(1)
+                # shape: (batch_size, num_tags, num_tags)
+                next_score = broadcast_score + self.transitions + broadcast_emission
+            else:
+                broadcast_score = score.unsqueeze(-1)
+                broadcast_emission = emissions[:, i].unsqueeze(1).unsqueeze(2)
+                # shape: (batch_size, num_tags, nbest, num_tags)
+                next_score = broadcast_score + self.transitions.unsqueeze(1) + broadcast_emission
+
+            # Find the top `nbest` maximum score over all possible current tag
+            # shape: (batch_size, nbest, num_tags)
+            next_score, indices = next_score.view(batch_size, -1, self.num_tags).topk(nbest, dim=1)
+
+            if i == 1:
+                score = score.unsqueeze(-1).expand(-1, -1, nbest)
+                indices = indices * nbest
+
+            # convert to shape: (batch_size, num_tags, nbest)
+            next_score = next_score.transpose(2, 1)
+            indices = indices.transpose(2, 1)
+
+            # Set score to the next score if this timestep is valid (mask == 1)
+            # and save the index that produces the next score
+            # shape: (batch_size, num_tags, nbest)
+            score = torch.where(mask[:, i].unsqueeze(-1).unsqueeze(-1).bool(), next_score, score)
+            indices = torch.where(mask[:, i].unsqueeze(-1).unsqueeze(-1).bool(), indices, oor_idx)
+            history_idx[:, i - 1] = indices
+
+        # End transition score shape: (batch_size, num_tags, nbest)
+        end_score = score + self.end_transitions.unsqueeze(-1)
+        _, end_tag = end_score.view(batch_size, -1).topk(nbest, dim=1)
+
+        # shape: (batch_size,)
+        seq_ends = mask.long().sum(dim=1) - 1
+
+        # insert the best tag at each sequence end (last position with mask == 1)
+        history_idx.scatter_(1, seq_ends.view(-1, 1, 1, 1).expand(-1, 1, self.num_tags, nbest),
+                             end_tag.view(-1, 1, 1, nbest).expand(-1, 1, self.num_tags, nbest))
+
+        # The most probable path for each sequence
+        best_tags_arr = torch.zeros((batch_size, seq_length, nbest), dtype=torch.long, device=device)
+        best_tags = torch.arange(nbest, dtype=torch.long, device=device).view(1, -1).expand(batch_size, -1)
+        for idx in range(seq_length - 1, -1, -1):
+            best_tags = torch.gather(history_idx[:, idx].view(batch_size, -1), 1, best_tags)
+            best_tags_arr[:, idx] = torch.div(best_tags.data.view(batch_size, -1), nbest, rounding_mode='floor')
+
+        return torch.where(mask.unsqueeze(-1).bool(), best_tags_arr, oor_tag).permute(2, 0, 1)
+```
