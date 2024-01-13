@@ -79,6 +79,7 @@ print("x的梯度:", x.grad)  # 输出为tensor([6.])
 ```
 
 ## 2.4 控制梯度计算
+```python
 def set_no_grad():
     x = torch.ones(5, requires_grad=True)  # input tensor
     y = torch.zeros(3)  # expected output
@@ -96,6 +97,7 @@ def set_no_grad():
     
     # z.backward(torch.ones_like(z))
     print("requires_grad: ", z.requires_grad)
+```
 
 ## 2.5 梯度累加和清0
 def grad_accumulate():
