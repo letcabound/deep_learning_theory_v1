@@ -165,17 +165,47 @@ General Language Understanding Evaluation benchmark (GLUE),
 ### 4.2.1 线性CRF的定义
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通常我们会使用线性链CRF来建模NER任务，所以本实验将聚焦在线性链CRF来探讨。那什么是线性链CRF呢，我们来看下李航老师在《统计学习方法》书中的定义：<br>
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;设 $X=[x_{1}, x_{2}, \ldots, x_{n}\right], Y=\left[y_{1}, y_{2}, \ldots, y_{n}]$ 均为线性链表示的随机变量序列，若在给定随机变量序列的 X 的条件下，随机变量序列 Y 的条件概率分布 $P(Y|X)$ 构成条件随机场，即满足马尔可夫性: <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;设 $X=[x_{1}, x_{2}, \ldots, x_{n} ], Y = [y_{1}, y_{2}, \ldots, y_{n}]$ 均为线性链表示的随机变量序列，若在给定随机变量序列的 X 的条件下，随机变量序列 Y 的条件概率分布 $P(Y|X)$ 构成条件随机场，即满足马尔可夫性: <br>
 
-$$ P(y_{i} \mid X, y_{1}, \ldots, y_{i-1}, y_{i+1}, \ldots, y_{n})=P(y_{i} \mid X, y_{i-1}, y_{i+1}) $$
+$$P(y_{i} \mid X, y_{1}, \ldots, y_{i-1}, y_{i+1}, \ldots, y_{n})=P(y_{i} \mid X, y_{i-1}, y_{i+1})$$
 
 *(注意：i = 1 or n 时 考虑单边即可)*
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;则称 $P(Y|X)$ 为线性链条件随机场。<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;则称 $P(Y|X)$ 为线性链条件随机场，线性体现在线性序列中的元素之间存在明确的顺序关系。每个元素都有一个前继和后继元素，除了第一个元素没有前继元素，最后一个元素没有后继元素。<br>
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一种经典的线性链CRF的结构图如下：<br>
 
+![figure10](images/figure10.jpg)
 
+1. 输入序列  X  和输出序列  Y  是线性序列; <br>
+2. 每个标签  $y_{i}$  的产生，只与当前位置的输入 $x_{i}$ 还有 $y_{i}$  直接相连的两个邻居  $y_{i-1} , y_{i+1}$ 有关，与其他的标签和输入没有关系。 <br>
 
+### 4.2.2 发射分数
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;上节中， $x=[x_{0}, x_{1}, \ldots, x_{i}, \ldots, x_{n}]$ 代表输入变量，对应到我们当前任务就是输入文本序列  $y=[y_{0}, y_{1}, \ldots, y_{i}, \ldots, y_{n}]$  代表相应的标签序列.<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;每个输入 $x_{i}$ 均对应着一个标签 $y_{i}$ ，这一步对应的就是**发射分数(emission score)**，它指示了当前的输入 $x_{i}$ 应该对应什么样的标签. 发射分数的生成过程如下：<br>
+
+![figure11](images/figure11.jpg)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;每个字词对应一行的标签分数（图3中只设置了三列，代表一共有3个标签），例如，  $x_{0}$  对第一个标签的分数预测为  $t_{00}$  ，对第二个标签的分数预测为  $t_{01}$  ，对第三个标签的分数预测为  $t_{02}$  ，依次类推。<br>
+
+### 4.2.3 转移分数
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在每个标签  $y_{i}$  之间也存在连线，它表示当前位置的标签  $y_{i}$  向下一个位置的标签  $y_{i+1}$  的一种转移。举个例子，假设当前位置的标签是"B-Person"，那下一个位置就很有可能是"IPerson"标签，即标签"B-Person"向"I-Person"转移的概率会比较大。我们用**转移分数**表示一个标签向另一个标签转移的分数，分数越高，转移概率就越大，反之亦然。下图展示了记录转移分数的矩阵。<br>
+
+![figure12](images/figure12.jpg)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;假设我们现在有个标签序列：B-Person, I-Person, O, O，B-Organization, I-Organization。那么这个序列的转移分数可按照如下方式计算：<br>
+
+$$Seq_{t}=T_{I-Person,B-Person}+T_{O, I-Person}+T_{O, O}+T_{O, B-Organization}+T_{B-Organization,I-Organization }$$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这个转移分数矩阵是CRF中的一个可学习的参数矩阵，它的存在能够帮助我们显示地去建模标签之间的转移关系，提高命名实体识别的准确率。<br>
+
+## 4.2.4 CRF 的损失函数计算
+- [参考链接](https://paddlepedia.readthedocs.io/en/latest/tutorials/natural_language_processing/ner/bilstm_crf.html)
+
+### 4.2.5 CRF的Viterbi解码
 - [参考链接](https://paddlepedia.readthedocs.io/en/latest/tutorials/natural_language_processing/ner/bilstm_crf.html)
 
 # 5 代码详解
+
