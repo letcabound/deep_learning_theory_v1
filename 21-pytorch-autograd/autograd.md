@@ -100,6 +100,7 @@ def set_no_grad():
 ```
 
 ## 2.5 梯度累加和清0
+```python
 def grad_accumulate():
     # torch.seed()
     x = torch.ones(5)  # input tensor
@@ -116,6 +117,7 @@ def grad_accumulate():
     w.grad.zero_()
     loss.backward(retain_graph=True)
     print(f"Grad for w second time = {w.grad}")
+```
 
 ## 2.6 小心 inplace-op
 ```python
