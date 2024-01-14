@@ -8,7 +8,7 @@
 
 **思考：当前状态 指的是什么 ？？？** <br>
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;要构建一个优化器（Optimizer），您需要提供一个可迭代的对象，其中包含要优化的参数（所有参数应该是 Variable 类型）。然后，您可以指定优化器特定的选项，例如学习率（learning rate）、权重衰减（weight decay）等。<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;要构建一个优化器（Optimizer），您需要提供一个可迭代的对象，其中包含要优化的参数（所有参数应该是 Parameter 类型）。然后，您可以指定优化器特定的选项，例如学习率（learning rate）、权重衰减（weight decay）等。<br>
 
 - 代码展示 <br>
 ```python
