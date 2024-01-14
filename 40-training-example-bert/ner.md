@@ -205,6 +205,9 @@ $$Seq_{t}=T_{I-Person,B-Person}+T_{O, I-Person}+T_{O, O}+T_{O, B-Organization}+T
 - [参考链接](https://paddlepedia.readthedocs.io/en/latest/tutorials/natural_language_processing/ner/bilstm_crf.html)
 
 ### 4.2.5 CRF的Viterbi解码
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在一般的条件随机场（CRF）模型中，通常假设当前时刻的状态只与前一个时刻的状态相关，即满足一阶马尔可夫性质。这意味着维特比算法中的局部最优性原理仅考虑前一个时刻的最优路径。然而，在某些实际问题中，可能存在更复杂的依赖关系，即当前时刻的状态与前面多个时刻的状态相关。这种情况下，简单的一阶马尔可夫性假设可能不足以捕捉到完整的依赖关系。<br>
+
 - [参考链接](https://paddlepedia.readthedocs.io/en/latest/tutorials/natural_language_processing/ner/bilstm_crf.html)
 
 # 5 代码详解
