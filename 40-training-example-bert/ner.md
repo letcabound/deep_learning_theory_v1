@@ -375,5 +375,31 @@ def _viterbi_decode_nbest(self, emissions: torch.FloatTensor, mask: torch.ByteTe
             best_tags = torch.gather(history_idx[:, idx].view(batch_size, -1), 1, best_tags) # 上一位置最佳tags的索引
             best_tags_arr[:, idx] = torch.div(best_tags.data.view(batch_size, -1), nbest, rounding_mode='floor') # 将每个位置的最佳idx记录下来
 
-        return torch.where(mask.unsqueeze(-1).bool(), best_tags_arr, oor_tag).permute(2, 0, 1) # 排除被mask 的单词
+        return torch.where(mask.unsqueeze(-1).bool(), best_tags_arr, oor_tag).permute(2, 0, 1) # 排除被mask 的单词 --> [2, 16, 72]
+```
+
+## 5.4 f1 score 的计算
+```python
+def evaluate(data):
+    # X: 真正例，Y:预测为正例的个数；Z：实际正例个数
+    X, Y, Z = 1e-10, 1e-10, 1e-10
+    X2, Y2, Z2 = 1e-10, 1e-10, 1e-10
+    for token_ids, label in tqdm(data):
+        scores = model.predict(token_ids)  # [btz, seq_len] --> [2, 16, 72]
+        attention_mask = label.gt(0) # true 和 false 判断
+
+        # token粒度
+        X += (scores.eq(label) * attention_mask).sum().item() # 真正例个数
+        Y += scores.gt(0).sum().item() # 预测的正例个数
+        Z += label.gt(0).sum().item() # 实际的正例个数
+
+        # entity粒度
+        entity_pred = trans_entity2tuple(scores) # 获取预测出来的实体
+        entity_true = trans_entity2tuple(label) # 获取实际的实体
+        X2 += len(entity_pred.intersection(entity_true)) # 预测正确的实体个数
+        Y2 += len(entity_pred) # 预测出的实体个数
+        Z2 += len(entity_true) # 真实的实体个数
+    f1, precision, recall = 2 * X / (Y + Z), X / Y, X / Z
+    f2, precision2, recall2 = 2 * X2 / (Y2 + Z2), X2/ Y2, X2 / Z2
+    return f1, precision, recall, f2, precision2, recall2
 ```
