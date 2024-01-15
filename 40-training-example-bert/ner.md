@@ -310,10 +310,10 @@ def _viterbi_decode_nbest(self, emissions: torch.FloatTensor, mask: torch.ByteTe
 
         # Start transition and first emission
         # shape: (batch_size, num_tags)
-        score = self.start_transitions + emissions[:, 0]
-        history_idx = torch.zeros((batch_size, seq_length, self.num_tags, nbest), dtype=torch.long, device=device)
-        oor_idx = torch.zeros((batch_size, self.num_tags, nbest), dtype=torch.long, device=device)
-        oor_tag = torch.full((batch_size, seq_length, nbest), pad_tag, dtype=torch.long, device=device)
+        score = self.start_transitions + emissions[:, 0] # 初始score
+        history_idx = torch.zeros((batch_size, seq_length, self.num_tags, nbest), dtype=torch.long, device=device) # 记录对应位置相应标签结尾的路径中，分数最大(或前nbset大)的路径在前一个位置的标签索引
+        oor_idx = torch.zeros((batch_size, self.num_tags, nbest), dtype=torch.long, device=device) # 被mask 的index 设置为0
+        oor_tag = torch.full((batch_size, seq_length, nbest), pad_tag, dtype=torch.long, device=device) # 被mask 住的tag 固定为 end tag
 
         # - score is a tensor of size (batch_size, num_tags) where for every batch,
         #   value at column j stores the score of the best tag sequence so far that ends
@@ -325,54 +325,55 @@ def _viterbi_decode_nbest(self, emissions: torch.FloatTensor, mask: torch.ByteTe
 
         # Viterbi algorithm recursive case: we compute the score of the best tag sequence
         # for every possible next tag
-        for i in range(1, seq_length):
+        for i in range(1, seq_length): # 从step 1 开始遍历
             if i == 1:
-                broadcast_score = score.unsqueeze(-1)
-                broadcast_emission = emissions[:, i].unsqueeze(1)
+                broadcast_score = score.unsqueeze(-1) # 维度扩展 [16, 7] --> [16, 7, 1]
+                broadcast_emission = emissions[:, i].unsqueeze(1) # [16, 7] --> [16, 1, 7]
                 # shape: (batch_size, num_tags, num_tags)
-                next_score = broadcast_score + self.transitions + broadcast_emission
+                next_score = broadcast_score + self.transitions + broadcast_emission # 下step 中所有可能路径的 score 矩阵
             else:
-                broadcast_score = score.unsqueeze(-1)
-                broadcast_emission = emissions[:, i].unsqueeze(1).unsqueeze(2)
-                # shape: (batch_size, num_tags, nbest, num_tags)
-                next_score = broadcast_score + self.transitions.unsqueeze(1) + broadcast_emission
+                broadcast_score = score.unsqueeze(-1) # [16, 7, 2] --> [16, 7, 2, 1]
+                broadcast_emission = emissions[:, i].unsqueeze(1).unsqueeze(2) # [16, 7] --> [16, 1, 1, 7]
+                # shape: (batch_size, num_tags, nbest, num_tags) 
+                next_score = broadcast_score + self.transitions.unsqueeze(1) + broadcast_emission # [16, 7, 2, 7]
 
             # Find the top `nbest` maximum score over all possible current tag
-            # shape: (batch_size, nbest, num_tags)
-            next_score, indices = next_score.view(batch_size, -1, self.num_tags).topk(nbest, dim=1)
+            # shape: (batch_size, nbest, num_tags) --> [16, 2, 7]
+            next_score, indices = next_score.view(batch_size, -1, self.num_tags).topk(nbest, dim=1) # 在 nbest * tags 个候选项中 选取nbest个最佳路径的index
 
             if i == 1:
-                score = score.unsqueeze(-1).expand(-1, -1, nbest)
-                indices = indices * nbest
+                score = score.unsqueeze(-1).expand(-1, -1, nbest) # 只有一条路径，所以要broadcast 一下： [16, 7] --> [16, 7, 2]
+                indices = indices * nbest # index 融合，乘以nbest
 
             # convert to shape: (batch_size, num_tags, nbest)
-            next_score = next_score.transpose(2, 1)
-            indices = indices.transpose(2, 1)
+            next_score = next_score.transpose(2, 1) # nbest 防置到最后一个维度
+            indices = indices.transpose(2, 1) # index 同样转置
 
             # Set score to the next score if this timestep is valid (mask == 1)
             # and save the index that produces the next score
             # shape: (batch_size, num_tags, nbest)
-            score = torch.where(mask[:, i].unsqueeze(-1).unsqueeze(-1).bool(), next_score, score)
-            indices = torch.where(mask[:, i].unsqueeze(-1).unsqueeze(-1).bool(), indices, oor_idx)
-            history_idx[:, i - 1] = indices
+            score = torch.where(mask[:, i].unsqueeze(-1).unsqueeze(-1).bool(), next_score, score) # 超过句子长度则 用原score代替
+            indices = torch.where(mask[:, i].unsqueeze(-1).unsqueeze(-1).bool(), indices, oor_idx) # 超过句子长度则 用oor_idx 代替
+            history_idx[:, i - 1] = indices # 记录当前idx 的 indices 到 history_idx
 
         # End transition score shape: (batch_size, num_tags, nbest)
-        end_score = score + self.end_transitions.unsqueeze(-1)
-        _, end_tag = end_score.view(batch_size, -1).topk(nbest, dim=1)
+        end_score = score + self.end_transitions.unsqueeze(-1) # last seq score
+        _, end_tag = end_score.view(batch_size, -1).topk(nbest, dim=1) # 最后的end_score 的topk
 
         # shape: (batch_size,)
-        seq_ends = mask.long().sum(dim=1) - 1
+        seq_ends = mask.long().sum(dim=1) - 1 # 获取每条句子长度
 
-        # insert the best tag at each sequence end (last position with mask == 1)
+        # # 在每个序列的末尾（最后一个具有 mask == 1 的位置）插入最佳标签。
+        # insert the best tag at each sequence end (last position with mask == 1)       
         history_idx.scatter_(1, seq_ends.view(-1, 1, 1, 1).expand(-1, 1, self.num_tags, nbest),
-                             end_tag.view(-1, 1, 1, nbest).expand(-1, 1, self.num_tags, nbest))
+                             end_tag.view(-1, 1, 1, nbest).expand(-1, 1, self.num_tags, nbest)) 
 
         # The most probable path for each sequence
-        best_tags_arr = torch.zeros((batch_size, seq_length, nbest), dtype=torch.long, device=device)
-        best_tags = torch.arange(nbest, dtype=torch.long, device=device).view(1, -1).expand(batch_size, -1)
+        best_tags_arr = torch.zeros((batch_size, seq_length, nbest), dtype=torch.long, device=device) # 每条句子记录两条最佳路径
+        best_tags = torch.arange(nbest, dtype=torch.long, device=device).view(1, -1).expand(batch_size, -1) # 记录当前idx 对应的tags 上 一个 idx 的索引
         for idx in range(seq_length - 1, -1, -1):
-            best_tags = torch.gather(history_idx[:, idx].view(batch_size, -1), 1, best_tags)
-            best_tags_arr[:, idx] = torch.div(best_tags.data.view(batch_size, -1), nbest, rounding_mode='floor')
+            best_tags = torch.gather(history_idx[:, idx].view(batch_size, -1), 1, best_tags) # 上一位置最佳tags的索引
+            best_tags_arr[:, idx] = torch.div(best_tags.data.view(batch_size, -1), nbest, rounding_mode='floor') # 将每个位置的最佳idx记录下来
 
-        return torch.where(mask.unsqueeze(-1).bool(), best_tags_arr, oor_tag).permute(2, 0, 1)
+        return torch.where(mask.unsqueeze(-1).bool(), best_tags_arr, oor_tag).permute(2, 0, 1) # 排除被mask 的单词
 ```
