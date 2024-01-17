@@ -185,3 +185,4 @@ class Attention(nn.Module):
 - [参考链接3](https://blog.nghuyong.top/2023/09/02/NLP/llm-position-embedding/)
 - [参考链接4](https://juejin.cn/post/7126132489428402184)
 - [参考链接5](https://blog.nghuyong.top/2023/09/02/NLP/llm-position-embedding/)
+- [参考链接5](https://https://kexue.fm/archives/8130)
