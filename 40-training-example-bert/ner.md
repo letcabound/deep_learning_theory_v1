@@ -205,7 +205,201 @@ $$Seq_{t}=T_{I-Person,B-Person}+T_{O, I-Person}+T_{O, O}+T_{O, B-Organization}+T
 - [参考链接](https://paddlepedia.readthedocs.io/en/latest/tutorials/natural_language_processing/ner/bilstm_crf.html)
 
 ### 4.2.5 CRF的Viterbi解码
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在一般的条件随机场（CRF）模型中，通常假设当前时刻的状态只与前一个时刻的状态相关，即满足一阶马尔可夫性质。这意味着维特比算法中的局部最优性原理仅考虑前一个时刻的最优路径。然而，在某些实际问题中，可能存在更复杂的依赖关系，即当前时刻的状态与前面多个时刻的状态相关。这种情况下，简单的一阶马尔可夫性假设可能不足以捕捉到完整的依赖关系。<br>
+
 - [参考链接](https://paddlepedia.readthedocs.io/en/latest/tutorials/natural_language_processing/ner/bilstm_crf.html)
 
 # 5 代码详解
 
+## 5.1 真实路径得分计算
+
+```python
+    def _compute_score(self, emissions: torch.Tensor, tags: torch.LongTensor, mask: torch.ByteTensor) -> torch.Tensor:
+        # emissions: (batch_size, seq_length, num_tags) # 发射分数
+        # tags: (batch_size, seq_length) # 标签
+        # mask: (batch_size, seq_length) # 掩模
+        batch_size, seq_length = tags.shape
+        mask = mask.float()
+
+        # Start transition score and first emission 初始化 转移分数 和 第一个发射分数
+        # shape: (batch_size,)
+        score = self.start_transitions[tags[:, 0]] # 收单词转移分数
+        score += emissions[torch.arange(batch_size), 0, tags[:, 0]] # 首单词发射分数
+
+        for i in range(1, seq_length):
+            # Transition score to next tag, only added if next timestep is valid (mask == 1)
+            # shape: (batch_size,)
+            score += self.transitions[tags[:, i - 1], tags[:, i]] * mask[:, i] # 当前单词转移分数
+            # Emission score for next tag, only added if next timestep is valid (mask == 1) 
+            # shape: (batch_size,)
+            score += emissions[torch.arange(batch_size), i, tags[:, i]] * mask[:, i] # 当前单词发射分数
+
+        # End transition score
+        # shape: (batch_size,)
+        seq_ends = mask.long().sum(dim=1) - 1
+        # shape: (batch_size,)
+        last_tags = tags[torch.arange(batch_size), seq_ends] 
+        # shape: (batch_size,)
+        score += self.end_transitions[last_tags] # 最后单词转移分数
+
+        return score 
+```
+
+## 5.2 总路径得分计算
+
+```python
+def _compute_normalizer(self, emissions: torch.Tensor, mask: torch.ByteTensor) -> torch.Tensor:
+        # emissions: (batch_size, seq_length, num_tags)
+        # mask: (batch_size, seq_length)
+        seq_length = emissions.size(1) # 总的 seq 长度
+
+        # Start transition score and first emission; score has size of
+        # (batch_size, num_tags) where for each batch, the j-th column stores
+        # the score that the first timestep has tag j
+        # shape: (batch_size, num_tags)
+        score = self.start_transitions + emissions[:, 0] # 初始分数
+
+        for i in range(1, seq_length):
+            # Broadcast score for every possible next tag
+            # shape: (batch_size, num_tags, 1)
+            broadcast_score = score.unsqueeze(2) # 将 shape: (batch_size, num_tags) -->  # shape: (batch_size, num_tags, 1)
+
+            # Broadcast emission score for every possible current tag
+            # shape: (batch_size, 1, num_tags)
+            broadcast_emissions = emissions[:, i].unsqueeze(1) # 当前seq 的发生分数 在 1 轴上 unsqueeze
+
+            # Compute the score tensor of size (batch_size, num_tags, num_tags) where
+            # for each sample, entry at row i and column j stores the sum of scores of all
+            # possible tag sequences so far that end with transitioning from tag i to tag j
+            # and emitting
+            # shape: (batch_size, num_tags, num_tags)
+            next_score = broadcast_score + self.transitions + broadcast_emissions
+
+            # Sum over all possible current tags, but we're in score space, so a sum
+            # becomes a log-sum-exp: for each sample, entry i stores the sum of scores of
+            # all possible tag sequences so far, that end in tag i
+            # shape: (batch_size, num_tags)
+            next_score = torch.logsumexp(next_score, dim=1)
+
+            # Set score to the next score if this timestep is valid (mask == 1)
+            # shape: (batch_size, num_tags)
+            score = torch.where(mask[:, i].unsqueeze(1).bool(), next_score, score)
+
+        # End transition score
+        # shape: (batch_size, num_tags)
+        score += self.end_transitions
+
+        # Sum (log-sum-exp) over all possible tags
+        # shape: (batch_size,)
+        return torch.logsumexp(score, dim=1)
+```
+
+## 5.3 Viterbi 解码过程
+```python
+def _viterbi_decode_nbest(self, emissions: torch.FloatTensor, mask: torch.ByteTensor,
+                              nbest: int, pad_tag: Optional[int] = None) -> List[List[List[int]]]:
+        # emissions: (batch_size, seq_length, num_tags)
+        # mask: (batch_size, seq_length)
+        # return: (nbest, batch_size, seq_length)
+        if pad_tag is None:
+            pad_tag = 0
+
+        device = emissions.device
+        batch_size, seq_length = mask.shape
+
+        # Start transition and first emission
+        # shape: (batch_size, num_tags)
+        score = self.start_transitions + emissions[:, 0] # 初始score
+        history_idx = torch.zeros((batch_size, seq_length, self.num_tags, nbest), dtype=torch.long, device=device) # 记录对应位置相应标签结尾的路径中，分数最大(或前nbset大)的路径在前一个位置的标签索引
+        oor_idx = torch.zeros((batch_size, self.num_tags, nbest), dtype=torch.long, device=device) # 被mask 的index 设置为0
+        oor_tag = torch.full((batch_size, seq_length, nbest), pad_tag, dtype=torch.long, device=device) # 被mask 住的tag 固定为 end tag
+
+        # - score is a tensor of size (batch_size, num_tags) where for every batch,
+        #   value at column j stores the score of the best tag sequence so far that ends
+        #   with tag j
+        # - history_idx saves where the best tags candidate transitioned from; this is used
+        #   when we trace back the best tag sequence
+        # - oor_idx saves the best tags candidate transitioned from at the positions
+        #   where mask is 0, i.e. out of range (oor)
+
+        # Viterbi algorithm recursive case: we compute the score of the best tag sequence
+        # for every possible next tag
+        for i in range(1, seq_length): # 从step 1 开始遍历
+            if i == 1:
+                broadcast_score = score.unsqueeze(-1) # 维度扩展 [16, 7] --> [16, 7, 1]
+                broadcast_emission = emissions[:, i].unsqueeze(1) # [16, 7] --> [16, 1, 7]
+                # shape: (batch_size, num_tags, num_tags)
+                next_score = broadcast_score + self.transitions + broadcast_emission # 下step 中所有可能路径的 score 矩阵
+            else:
+                broadcast_score = score.unsqueeze(-1) # [16, 7, 2] --> [16, 7, 2, 1]
+                broadcast_emission = emissions[:, i].unsqueeze(1).unsqueeze(2) # [16, 7] --> [16, 1, 1, 7]
+                # shape: (batch_size, num_tags, nbest, num_tags) 
+                next_score = broadcast_score + self.transitions.unsqueeze(1) + broadcast_emission # [16, 7, 2, 7]
+
+            # Find the top `nbest` maximum score over all possible current tag
+            # shape: (batch_size, nbest, num_tags) --> [16, 2, 7]
+            next_score, indices = next_score.view(batch_size, -1, self.num_tags).topk(nbest, dim=1) # 在 nbest * tags 个候选项中 选取nbest个最佳路径的index
+
+            if i == 1:
+                score = score.unsqueeze(-1).expand(-1, -1, nbest) # 只有一条路径，所以要broadcast 一下： [16, 7] --> [16, 7, 2]
+                indices = indices * nbest # index 融合，乘以nbest
+
+            # convert to shape: (batch_size, num_tags, nbest)
+            next_score = next_score.transpose(2, 1) # nbest 防置到最后一个维度
+            indices = indices.transpose(2, 1) # index 同样转置
+
+            # Set score to the next score if this timestep is valid (mask == 1)
+            # and save the index that produces the next score
+            # shape: (batch_size, num_tags, nbest)
+            score = torch.where(mask[:, i].unsqueeze(-1).unsqueeze(-1).bool(), next_score, score) # 超过句子长度则 用原score代替
+            indices = torch.where(mask[:, i].unsqueeze(-1).unsqueeze(-1).bool(), indices, oor_idx) # 超过句子长度则 用oor_idx 代替
+            history_idx[:, i - 1] = indices # 记录当前idx 的 indices 到 history_idx
+
+        # End transition score shape: (batch_size, num_tags, nbest)
+        end_score = score + self.end_transitions.unsqueeze(-1) # last seq score
+        _, end_tag = end_score.view(batch_size, -1).topk(nbest, dim=1) # 最后的end_score 的topk
+
+        # shape: (batch_size,)
+        seq_ends = mask.long().sum(dim=1) - 1 # 获取每条句子长度
+
+        # # 在每个序列的末尾（最后一个具有 mask == 1 的位置）插入最佳标签。
+        # insert the best tag at each sequence end (last position with mask == 1)       
+        history_idx.scatter_(1, seq_ends.view(-1, 1, 1, 1).expand(-1, 1, self.num_tags, nbest),
+                             end_tag.view(-1, 1, 1, nbest).expand(-1, 1, self.num_tags, nbest)) 
+
+        # The most probable path for each sequence
+        best_tags_arr = torch.zeros((batch_size, seq_length, nbest), dtype=torch.long, device=device) # 每条句子记录两条最佳路径
+        best_tags = torch.arange(nbest, dtype=torch.long, device=device).view(1, -1).expand(batch_size, -1) # 记录当前idx 对应的tags 上 一个 idx 的索引
+        for idx in range(seq_length - 1, -1, -1):
+            best_tags = torch.gather(history_idx[:, idx].view(batch_size, -1), 1, best_tags) # 上一位置最佳tags的索引
+            best_tags_arr[:, idx] = torch.div(best_tags.data.view(batch_size, -1), nbest, rounding_mode='floor') # 将每个位置的最佳idx记录下来
+
+        return torch.where(mask.unsqueeze(-1).bool(), best_tags_arr, oor_tag).permute(2, 0, 1) # 排除被mask 的单词 --> [2, 16, 72]
+```
+
+## 5.4 f1 score 的计算
+```python
+def evaluate(data):
+    # X: 真正例，Y:预测为正例的个数；Z：实际正例个数
+    X, Y, Z = 1e-10, 1e-10, 1e-10
+    X2, Y2, Z2 = 1e-10, 1e-10, 1e-10
+    for token_ids, label in tqdm(data):
+        scores = model.predict(token_ids)  # [btz, seq_len] --> [2, 16, 72]
+        attention_mask = label.gt(0) # true 和 false 判断
+
+        # token粒度
+        X += (scores.eq(label) * attention_mask).sum().item() # 真正例个数
+        Y += scores.gt(0).sum().item() # 预测的正例个数
+        Z += label.gt(0).sum().item() # 实际的正例个数
+
+        # entity粒度
+        entity_pred = trans_entity2tuple(scores) # 获取预测出来的实体
+        entity_true = trans_entity2tuple(label) # 获取实际的实体
+        X2 += len(entity_pred.intersection(entity_true)) # 预测正确的实体个数
+        Y2 += len(entity_pred) # 预测出的实体个数
+        Z2 += len(entity_true) # 真实的实体个数
+    f1, precision, recall = 2 * X / (Y + Z), X / Y, X / Z
+    f2, precision2, recall2 = 2 * X2 / (Y2 + Z2), X2/ Y2, X2 / Z2
+    return f1, precision, recall, f2, precision2, recall2
+```

@@ -8,7 +8,7 @@
 
 **思考：当前状态 指的是什么 ？？？** <br>
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;要构建一个优化器（Optimizer），您需要提供一个可迭代的对象，其中包含要优化的参数（所有参数应该是 Variable 类型）。然后，您可以指定优化器特定的选项，例如学习率（learning rate）、权重衰减（weight decay）等。<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;要构建一个优化器（Optimizer），您需要提供一个可迭代的对象，其中包含要优化的参数（所有参数应该是 Parameter 类型）。然后，您可以指定优化器特定的选项，例如学习率（learning rate）、权重衰减（weight decay）等。<br>
 
 - 代码展示 <br>
 ```python
@@ -17,7 +17,7 @@ optimizer = optim.Adam([var1, var2], lr=0.0001)
 ```
 
 ## 1.2 逐参数选项(Per-parameter options)
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;优化器还支持指定每个参数的选项。为了实现这一点，不要传递一个 Variable 对象的可迭代对象，而是传递一个 dict 对象的可迭代对象。每个 dict 对象将定义一个单独的参数组，并且应包含一个 **"params" key**，其中包含属于该组的参数列表。**其他 key**应与优化器接受的关键字参数匹配，并将用作该组的优化选项。<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;优化器还支持指定每个参数的选项。为了实现这一点，不要传递一个 Parameter 对象的可迭代对象，而是传递一个 dict 对象的可迭代对象。每个 dict 对象将定义一个单独的参数组，并且应包含一个 **"params" key**，其中包含属于该组的参数列表。**其他 key**应与优化器接受的关键字参数匹配，并将用作该组的优化选项。<br>
 
 - 注意(Note) <br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;您仍然可以将选项作为关键字参数传递。它们将被用作默认值，在未覆盖它们的组中生效。当您只想改变单个选项，同时保持其他参数组之间一致时，这非常有用。<br>
