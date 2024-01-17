@@ -45,6 +45,8 @@ $$p_{k, 2i+1} = cos (\frac{k}{10000^{2 i / d}})$$
 
 ![images](images/figure1.jpg)
 
+ 三角函数绝对位置编码只考虑距离没有考虑方向。
+
 ### 3.1.2 可学习(Learnable)的位置编码
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;可学习(Learnable)位置编码是指将位置编码当作可训练参数，比如输入序列(经过嵌入层后)的大小为  $n \times d$  ，则随机初始化一个  $p \in \mathbb{R}^{n \times d}$  的矩阵作为位置编码，随训练过程更新。<br>
 
@@ -181,3 +183,4 @@ class Attention(nn.Module):
 - [参考链接1](https://mp.weixin.qq.com/s/ENpXBYQ4hfdTLSXBIoF00Q)
 - [参考链接2](https://www.cnblogs.com/shiyublog/p/11236212.html)
 - [参考链接3](https://blog.nghuyong.top/2023/09/02/NLP/llm-position-embedding/)
+- [参考链接4](https://juejin.cn/post/7126132489428402184)
