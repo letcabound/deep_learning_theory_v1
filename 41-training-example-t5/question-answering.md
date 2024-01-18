@@ -31,34 +31,79 @@ python run_seq2seq_qa.py \
 - [t5 论文链接](https://arxiv.org/pdf/1910.10683.pdf)
 - [t5 论文链接](https://links.jianshu.com/go?to=https%3A%2F%2Farxiv.org%2Fabs%2F1910.10683)
 
-
 # 3 position embedding 总结
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;不同于RNN、CNN等模型，对于Transformer模型来说，位置编码的加入是必不可少的，因为纯粹的Attention模块是无法捕捉**输入顺序**的，即无法区分不同位置的Token。为此我们大体有两个选择：<br>
+1. 想办法将位置信息融入到输入中，这构成了绝对位置编码的一般做法；<br>
+2. 想办法微调一下Attention结构，使得它有能力分辨不同位置的Token，这构成了相对位置编码的一般做法。<br>
+
 ## 3.1 绝对位置编码
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一般来说，绝对位置编码会加到输入中：在输入的第 k 个向量  $x_{k}$ 中加入位置向量  $p_{k}$  变为  $x_{k} + p_{k}$ ，其中  $p_{k}$ 只依赖于位置编号k. <br>
+
+- 绝对位置编码公式表达如下：<br>
+![figure2](images/figure2.jpg)
+
 ### 3.1.1 三角函数式(Sinusoidal)位置编码
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;三角函数式(Sinusoidal)位置编码是在原Transformer模型中使用的一种显式编码。以一维三角函数编码为例：<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;三角函数式(Sinusoidal)位置编码是在原 [Transformer论文](https://arxiv.org/abs/1706.03762) 中使用的一种显式编码。<br>
 
 $$p_{k, 2i} = sin (\frac{k}{10000^{2 i / d}})$$
 
 $$p_{k, 2i+1} = cos (\frac{k}{10000^{2 i / d}})$$
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一个长度为32 的输入序列（每个输入向量的特征维度是128）的Sinusoidal编码的可视化如下：<br>
+其中 $p_{k, 2 i}, p_{k, 2 i+1}$ 分别是位置 k 的编码向量的第 $2i, 2i+1$  个分量， d 是位置向量的维度。<br>
 
-![images](images/figure1.jpg)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;固定维度d为500，绘制不同N下的position embedding，具体如下：<br>
 
- 三角函数绝对位置编码只考虑距离没有考虑方向。
+![figure1](images/figure1.jpg)
+
+- 示例：<br>
+![figure8](images/figure8.jpg)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;可以看到随着N的增大，周期会明显变长。文章中的N为10000，作者没有具体的解释，猜测可能是为了能让周期是一个很大的数，更好的区分开每个位置。<br>
 
 ### 3.1.2 可学习(Learnable)的位置编码
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;可学习(Learnable)位置编码是指将位置编码当作可训练参数，比如输入序列(经过嵌入层后)的大小为  $n \times d$  ，则随机初始化一个  $p \in \mathbb{R}^{n \times d}$  的矩阵作为位置编码，随训练过程更新。<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;很显然，绝对位置编码的一个最朴素方案是不特意去设计什么，而是直接将位置编码当作可训练参数，比如最大长度为512，编码维度为768，那么就初始化一个512×768的矩阵作为位置向量，让它随着训练过程更新。现在的BERT、GPT等模型所用的就是这种位置编码.<br>
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;可学习位置编码的缺点是没有外推性，即如果预训练序列的最大长度为  n  ，则无法处理长度超过  n  的序列。此时可以将超过  n  部分的位置编码随机初始化并微调。<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;对于这种训练式的绝对位置编码，一般的认为它的缺点是没有外推性，即如果预训练最大长度为512的话，那么最多就只能处理长度为512的句子，再长就处理不了了。当然，也可以将超过512的位置向量随机初始化，然后继续微调。<br>
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;风极一时的 [bert](https://arxiv.org/abs/1810.04805) 中采用的就是这种编码方式，如下图所示：<br>
+
+![figure7](images/figure7.jpg)
 
 ## 3.2 相对位置编码
-## 3.2.1 经典的相对位置编码
-- [论文链接](https://aclanthology.org/N18-2074.pdf)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;相对位置并没有完整建模每个输入的位置信息，而是在算Attention的时候考虑当前位置与被Attention的位置的相对距离，由于自然语言一般更依赖于相对位置，所以相对位置编码通常也有着优秀的表现。对于相对位置编码来说，它的灵活性更大，更加体现出了研究人员的“天马行空”。<br>
+
+### 3.2.1 经典的相对位置编码
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;相对位置编码起源于Google的论文[《Self-Attention with Relative Position Representations》](https://arxiv.org/abs/1803.02155)，一般认为，相对位置编码是由绝对位置编码启发而来，我们再回忆下一般的带绝对位置编码的Attention：<br>
+
+![figure2](images/figure2.jpg)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;其中 softmax 对 j 那一维归一化，这里的向量都是指行向量。我们初步展开 $k_{j}^{\top}$ . <br>
+
+![figure9](images/figure9.jpg)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;为了引入相对位置信息，Google把第一项位置去掉，第二项 $p_{j} W_{K}$ 改为二元位置向量 $R_{i, j}^{K}$ . 变成： <br>
+
+$$a_{i, j}=softmax(x_{i} W_{Q}(x_{j} W_{K}+R_{i, j}^{K})^{\top})$$
+
+以及 $o_{i}=\sum_{j} a_{i, j} v_{j} = \sum_{j} a_{i, j}(x_{j} W_{V}+p_{j} W_{V})$ 中的 $p_{j} W_{V}$ 换成 $R_{i, j}^{V}$ : <br>
+
+$$o_{i}=\sum_{j} a_{i, j}(x_{j} W_{V}+R_{i, j}^{V})$$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;所谓相对位置，是将本来依赖于二元坐标  (i, j)  的向量  $R_{i, j}^{K}, R_{i, j}^{V}$ ，改为只依赖于相对距离  i-j，并且通常来说会进行截断，以适应不同任意的距离: <br>
+
+$$R_{i, j}^{K}=p_{K}[clip(i-j, p_{\min }, p_{\max })]$$
+
+$$R_{i, j}^{v}=p_{v}[clip(i-j, p_{\min }, p_{\max })]$$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这样一来，只需要有限个位置编码，就可以表达出任意长度的相对位置（因为进行了截断），不管 $p_{K} ,p_{V}$ 是选择可训练式的还是三角函数式的，都可以达到处理任意长度文本的需求。<br>
+
+### 3.2.2 T5 中的相对位置编码
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;T5模型出自文章[《Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer》](https://arxiv.org/abs/1910.10683)，里边用到了一种更简单的相对位置编码。<br>
+
+将
 
 
-## 3.2.2 T5 中的相对位置编码
 - [来源](https://arxiv.org/abs/1910.10683)
 
 - 形成相对位置坐标
@@ -184,5 +229,4 @@ class Attention(nn.Module):
 - [参考链接2](https://www.cnblogs.com/shiyublog/p/11236212.html)
 - [参考链接3](https://blog.nghuyong.top/2023/09/02/NLP/llm-position-embedding/)
 - [参考链接4](https://juejin.cn/post/7126132489428402184)
-- [参考链接5](https://blog.nghuyong.top/2023/09/02/NLP/llm-position-embedding/)
 - [参考链接5](https://https://kexue.fm/archives/8130)
