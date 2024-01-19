@@ -77,7 +77,7 @@ $$p_{k, 2i+1} = cos (\frac{k}{10000^{2 i / d}})$$
 
 ![figure2](images/figure2.jpg)
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;其中 softmax 对 j 那一维归一化，这里的向量都是指行向量。我们初步展开 $k_{j}^{\top}$ . <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;其中 softmax 对 j 那一维归一化，这里的向量都是指行向量。我们初步展开 $q_{i}k_{j}^{\top}$ . <br>
 
 ![figure9](images/figure9.jpg)
 
@@ -99,61 +99,83 @@ $$R_{i, j}^{v}=p_{v}[clip(i-j, p_{\min }, p_{\max })]$$
 
 ### 3.2.2 T5 中的相对位置编码
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;T5模型出自文章[《Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer》](https://arxiv.org/abs/1910.10683)，里边用到了一种更简单的相对位置编码。<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;T5模型出自文章[《Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer》](https://arxiv.org/abs/1910.10683)，里边用到了一种更简单的相对位置编码。 <br>
 
-将
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将  $q_{i}k_{j}^{\top}$ 完全展开得到：<br>
 
+$$q_{i} k_{j}^{\top}= x_{i} W_{Q} W_{K}^{\top} x_{j}^{\top}+x_{i} W_{Q} W_{K}^{\top} p_{j}^{\top}+p_{i} W_{Q} W_{K}^{\top} x_{j}^{\top}+p_{i} W_{Q} W_{K}^{\top} p_{j}^{\top}$$
 
-- [来源](https://arxiv.org/abs/1910.10683)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;上式每一项可以分别理解为“输入-输入”、“输入-位置”、“位置-输入”、“位置-位置”四项注意力的组合。如果我们认为输入信息与位置信息应该是独立（解耦）的，那么它们就不应该有过多的交互，所以“输入-位置”、“位置-输入”两项Attention可以删掉， $p_{i} W_{Q} W_{K}^{\top} p_{j}^{\top}$ 实际上只是一个只依赖于(i,j) 的标量，我们可以直接将它作为参数训练出来，即简化为: <br>
 
-- 形成相对位置坐标
-```python
-a = torch.arange(15)[:, None]
-b = torch.arange(15)[None, :]
-c = a -b
->>> c.shape
-torch.Size([15, 15])
->>> c
-tensor([[  0,  -1,  -2,  -3,  -4,  -5,  -6,  -7,  -8,  -9, -10, -11, -12, -13,
-         -14],
-        [  1,   0,  -1,  -2,  -3,  -4,  -5,  -6,  -7,  -8,  -9, -10, -11, -12,
-         -13],
-        [  2,   1,   0,  -1,  -2,  -3,  -4,  -5,  -6,  -7,  -8,  -9, -10, -11,
-         -12],
-        [  3,   2,   1,   0,  -1,  -2,  -3,  -4,  -5,  -6,  -7,  -8,  -9, -10,
-         -11],
-        [  4,   3,   2,   1,   0,  -1,  -2,  -3,  -4,  -5,  -6,  -7,  -8,  -9,
-         -10],
-        [  5,   4,   3,   2,   1,   0,  -1,  -2,  -3,  -4,  -5,  -6,  -7,  -8,
-          -9],
-        [  6,   5,   4,   3,   2,   1,   0,  -1,  -2,  -3,  -4,  -5,  -6,  -7,
-          -8],
-        [  7,   6,   5,   4,   3,   2,   1,   0,  -1,  -2,  -3,  -4,  -5,  -6,
-          -7],
-        [  8,   7,   6,   5,   4,   3,   2,   1,   0,  -1,  -2,  -3,  -4,  -5,
-          -6],
-        [  9,   8,   7,   6,   5,   4,   3,   2,   1,   0,  -1,  -2,  -3,  -4,
-          -5],
-        [ 10,   9,   8,   7,   6,   5,   4,   3,   2,   1,   0,  -1,  -2,  -3,
-          -4],
-        [ 11,  10,   9,   8,   7,   6,   5,   4,   3,   2,   1,   0,  -1,  -2,
-          -3],
-        [ 12,  11,  10,   9,   8,   7,   6,   5,   4,   3,   2,   1,   0,  -1,
-          -2],
-        [ 13,  12,  11,  10,   9,   8,   7,   6,   5,   4,   3,   2,   1,   0,
-          -1],
-        [ 14,  13,  12,  11,  10,   9,   8,   7,   6,   5,   4,   3,   2,   1,
-           0]])
-```
+$$x_{i} W_{Q} W_{K}^{\top} x_{j}^{\top} + \beta_{i, j}$$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;简而言之，它仅仅是在Attention矩阵的基础上加一个可训练的偏置项而已. <br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;比较“别致”的是，不同于常规位置编码对将 $\beta_{i, j}$  视为  i-j  的函数并进行截断的做法， **T5** 对相对位置进行了一个“分桶”处理，即相对位置是  i-j  的位置实际上对应的是  f(i-j)  位置，映射关系如下：<br>
+
+![figure3](images/figure3.jpg)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;具体的映射代码，读者自行看源码就好。这个设计的思路其实也很直观，就是比较邻近的位置（0～7），我们需要比较得精细一些，所以给它们都分配一个独立的位置编码，至于稍远的位置（比如8～11），我们不用区分得太清楚，所以它们可以共用一个位置编码，距离越远，共用的范围就可以越大，直到达到指定范围再clip。<br>
+
+- [论文链接](https://arxiv.org/abs/1910.10683)
 
 ## 3.3 旋转位置编码
+[Rotary Position Embedding 论文](https://link.zhihu.com/?target=https%3A//arxiv.org/pdf/2104.09864.pdf)
+
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;旋转位置编码（Rotary Position Embedding，RoPE）是论文 Roformer: Enhanced Transformer With Rotray Position Embedding 提出的一种能够将相对位置信息依赖集成到 self-attention 中并提升 transformer 架构性能的位置编码方式。而目前很火的 LLaMA、GLM 模型也是采用该位置编码方式。和相对位置编码相比，RoPE 具有更好的外推性，目前是大模型相对位置编码中应用最广的方式之一。<br>
 
 **思考：什么是大模型外推性？** <br>
 
-外推性是指大模型在训练时和预测时的输入长度不一致，导致模型的泛化能力下降的问题。例如，如果一个模型在训练时只使用了 512 个 token 的文本，那么在预测时如果输入超过 512 个 token，模型可能无法正确处理。这就限制了大模型在处理长文本或多轮对话等任务时的效果。<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;外推性是指大模型在训练时和预测时的输入长度不一致，导致模型的泛化能力下降的问题。例如，如果一个模型在训练时只使用了 512 个 token 的文本，那么在预测时如果输入超过 512 个 token，模型可能无法正确处理。这就限制了大模型在处理长文本或多轮对话等任务时的效果。<br>
 
-- llama 中的RoPE 代码实现
+### 3.3.1 RoPE 原理
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RoPE 论文中指出，为了能利用上token的相对位置信息，假定 query 向量 $q_{m}$  和 key 向量 $k_{n}$ 之间的内积操作可以被一个函数 g 表示，该函数 g 的输入是词嵌入向量 $x_{m}, x_{n}$ ， 和它们之间的相对位置 m - n：<br>
+
+$$\langle f_{q}(x_{m}, m), f_{k}(x_{n}, n)\rangle = g(x_{m}, x_{n}, m-n)$$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;接下来的目标就是找到一个等价的位置编码方式，从而使得上述关系成立。假定现在词嵌入向量的维度是两维，这样就可以利用 2 维度平面上的向量的几何性质，然后论文中提出了一个满足上述关系的 f 和 g 的形式如下：<br>
+
+![figure10](images/figure10.jpg)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这里面 Re 表示复数的实部。<br>
+
+进一步地， $f_{g}$ 可以表示成下面的式子：<br>
+
+![figure11](images/figure11.jpg)
+
+同理， $f_{k}$ 表示成下面的式子：<br>
+
+![figure12](images/figure12.jpg)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;看到这里会发现，这不就是向量乘以了一个旋转矩阵吗？**这就是为什么叫做旋转位置编码的原因。** <br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;最终 $g(x_{m}, x_{n}, m-n)$ 可以表示如下：<br>
+
+![figure13](images/figure13.jpg)
+
+### 3.3.2 2 维扩展到多维
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 实际中 embedding 维度 都是多维的，将2维推广到任意维度，可以表示如下：<br>
+
+$$f_{q, k}(x_{m}, m)=R_{\Theta, m}^{d} W_{q, k} x_{m}$$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 内积满足线性叠加性，因此任意偶数维的 RoPE，我们都可以表示为二维情形的拼接，即<br>
+
+![figure4](images/figure4.jpg)
+
+- 其中 <br>
+$$\Theta=\left\lbrace \theta_{i}=10000^{-2(i-1) / d}, i \in[1,2, \ldots, d / 2]\right\rbrace$$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将 RoPE 应用到前面公式 g 的 Self-Attention 计算，可以得到包含相对位置信息的 Self-Attetion：<br>
+
+$$q_{m}^{\top} k_{n}=(R_{\Theta, m}^{d} W_{q} x_{m})^{\top}(R_{\Theta, n}^{d} W_{k} x_{n})=x_{m}^{\top} W_{q} R_{\Theta, n-m}^{d} W_{k} x_{n}$$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;值得指出的是，由于  是一个正交矩阵，它不会改变向量的模长，因此通常来说它不会改变原模型的稳定性。<br>
+
+$$R_{\Theta}^{d}$$
+
+### 3.3.3 RoPE 的高效计算
+
+### 3.3.2 llama 中的RoPE 代码实现
 
 ```python
 # 生成旋转矩阵
@@ -221,8 +243,7 @@ class Attention(nn.Module):
 ```
 
 - [参考链接](https://hub.baai.ac.cn/view/29979)
-- [参考链接](https://kexue.fm/archives/8265)
-
+- [参考链接](https://hub.baai.ac.cn/view/29979)
 
 # 4 参考链接
 - [参考链接1](https://mp.weixin.qq.com/s/ENpXBYQ4hfdTLSXBIoF00Q)
