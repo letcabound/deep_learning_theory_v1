@@ -14,7 +14,7 @@
 
 ```python
 optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
-scheduler = ExponentialLR(optimizer, gamma=0.9)
+scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
 
 for epoch in range(20):
     for input, target in dataset:
