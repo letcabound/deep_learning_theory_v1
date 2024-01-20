@@ -2,7 +2,7 @@
 
 ## 1.1 pytorch 不仅仅是动态图
 
-![figure1](image/pytorch-patterns-figure1.jpg)
+![figure1](images/pytorch-patterns-figure1.jpg)
 
 ## 1.2 理解动态图和静态图
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;静态图（Static Graph）和动态图（Dynamic Graph）是两种不同的计算图表示形式，用于描述深度学习模型的计算过程。<br>
