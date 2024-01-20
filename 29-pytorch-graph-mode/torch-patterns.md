@@ -131,10 +131,10 @@ def run_script_model():
 ```python
 def traced_demo():
     model = MyModel()
-    scripted_model = torch.jit.trace(model, torch.randn(1, 10))
+    traced_model = torch.jit.trace(model, torch.randn(1, 10))
 
     # 保存模型到文件
-    scripted_model.save("traced_model.pt")
+    traced_model.save("traced_model.pt")
 
     # 重新加载模型
     loaded_model = torch.jit.load("traced_model.pt")
