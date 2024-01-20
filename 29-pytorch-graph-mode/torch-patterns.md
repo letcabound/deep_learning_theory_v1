@@ -39,7 +39,7 @@
 ## 2.3 torch.jit.trace
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;jit.trace：jit.trace是将PyTorch模型转换为跟踪形式的工具。它通过跟踪模型的输入和输出，捕获模型的执行轨迹，并将其转换为一个可重放的跟踪模型。这个跟踪模型可以在后续的推理过程中重复使用，避免了重复的图构建和优化过程。使用jit.trace时，通常需要提供示例输入来触发模型的执行并捕获跟踪。<br>
 
-## 2.4 torch.copile
+## 2.4 torch.compile
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;torch.compile是最新的方法，可以加速您的PyTorch代码！torch.compile通过即时编译(PyTorch代码编译成优化内核)来使PyTorch代码运行更快，同时需要最小的代码更改。<br>
 
 # 3 案例：
