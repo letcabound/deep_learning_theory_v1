@@ -347,6 +347,7 @@ for epoch in range(total_epochs):
 带 Warm Restarts 的余弦退火学习率。<br>
 
 - 图示：<br>
+
 ![figure9](images/lr-figure9.jpg)
 
 - 公式：<br>
