@@ -49,9 +49,9 @@ writer.add_scalars('Training vs. Validation Loss',
 ```
 
 # 4 执行方式：
-tensorboard --logdir=./log
-tensorboard --logdir dir_name
-python -m tensorboard.main --logdir=./logs
+tensorboard --logdir=./log  <br>
+tensorboard --logdir dir_name   <br>
+python -m tensorboard.main --logdir=./logs   <br>
 
 # 5 查看graph
 ```python

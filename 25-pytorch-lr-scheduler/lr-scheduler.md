@@ -14,7 +14,7 @@
 
 ```python
 optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
-scheduler = ExponentialLR(optimizer, gamma=0.9)
+scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
 
 for epoch in range(20):
     for input, target in dataset:
@@ -347,6 +347,7 @@ for epoch in range(total_epochs):
 带 Warm Restarts 的余弦退火学习率。<br>
 
 - 图示：<br>
+
 ![figure9](images/lr-figure9.jpg)
 
 - 公式：<br>

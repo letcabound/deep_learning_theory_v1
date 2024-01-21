@@ -2,7 +2,7 @@
 
 ## 1.1 pytorch 不仅仅是动态图
 
-![figure1](image/pytorch-patterns-figure1.jpg)
+![figure1](images/pytorch-patterns-figure1.jpg)
 
 ## 1.2 理解动态图和静态图
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;静态图（Static Graph）和动态图（Dynamic Graph）是两种不同的计算图表示形式，用于描述深度学习模型的计算过程。<br>
@@ -14,10 +14,10 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;静态图和动态图各有其优势和应用场景。静态图在模型执行前可以进行静态优化和编译，从而在执行过程中获得更高的性能。它适用于具有固定结构和无需动态控制流的模型。动态图更灵活，能够处理动态控制流和变长输入数据等情况，适用于具有动态特性和复杂逻辑的模型。由于动态图可以根据实际输入数据生成计算图，因此它在模型的调试和开发过程中更具交互性和可读性。<br>
 
 ## 1.3 静态图的优势
-- 图优化：
+- 图优化：<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;静态图允许PyTorch在转换过程中应用一系列的图优化技术。这些优化包括常量折叠、死代码消除、运算融合、内存优化等，可以减少不必要的计算、内存消耗和数据传输，从而提高模型的执行效率。<br>
 
-- 编译优化：
+- 编译优化：<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;静态图需要在转换过程中进行编译，将动态操作转换为优化的静态内核。这种编译过程可以包括静态类型推断、代码生成和优化等步骤，可以提前优化模型的计算图，并生成高效的机器代码。<br>
 
 # 2 几种模式简介
@@ -39,7 +39,7 @@
 ## 2.3 torch.jit.trace
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;jit.trace：jit.trace是将PyTorch模型转换为跟踪形式的工具。它通过跟踪模型的输入和输出，捕获模型的执行轨迹，并将其转换为一个可重放的跟踪模型。这个跟踪模型可以在后续的推理过程中重复使用，避免了重复的图构建和优化过程。使用jit.trace时，通常需要提供示例输入来触发模型的执行并捕获跟踪。<br>
 
-## 2.4 torch.copile
+## 2.4 torch.compile
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;torch.compile是最新的方法，可以加速您的PyTorch代码！torch.compile通过即时编译(PyTorch代码编译成优化内核)来使PyTorch代码运行更快，同时需要最小的代码更改。<br>
 
 # 3 案例：
@@ -131,10 +131,10 @@ def run_script_model():
 ```python
 def traced_demo():
     model = MyModel()
-    scripted_model = torch.jit.trace(model, torch.randn(1, 10))
+    traced_model = torch.jit.trace(model, torch.randn(1, 10))
 
     # 保存模型到文件
-    scripted_model.save("traced_model.pt")
+    traced_model.save("traced_model.pt")
 
     # 重新加载模型
     loaded_model = torch.jit.load("traced_model.pt")
