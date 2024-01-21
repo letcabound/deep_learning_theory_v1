@@ -172,9 +172,23 @@ $$q_{m}^{\top} k_{n}=(R_{\Theta, m}^{d} W_{q} x_{m})^{\top}(R_{\Theta, n}^{d} W_
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;值得指出的是，由于 $R_{\Theta}^{d}$ 是一个正交矩阵，它不会改变向量的模长，因此通常来说它不会改变原模型的稳定性。<br>
 
 ### 3.3.3 RoPE 的高效计算
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;由于  $R_{\Theta, m}^{d}$  的稀疏性，所以直接用矩阵乘法来实现会很浪费算力，推荐通过下述方式来实现 RoPE: <br>
 
-### 3.3.2 llama 中的RoPE 代码实现
+![figure14](images/figure14.jpg)
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;其中， $\otimes$ 逐位对应相乘，即计算框架中的  运算。从这个实现也可以看到，RoPE 可以视为是乘性位置编码的变体。总结来说，RoPE 的 self-attention 操作的流程是：对于 token 序列中的每个词嵌入向量，首先计算其对应的 query 和 key 向量，然后对每个 token 位置都计算对应的旋转位置编码，接着对每个 token 位置的 query 和 key 向量的元素按照两两一组应用旋转变换，最后再计算 query 和 key 之间的内积得到 self-attention 的计算结果。具体过程可展示如下：<br>
+
+![figure15](images/figure15.jpg)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;可以看到，RoPE 形式上和前面公式 Sinusoidal 位置编码有点相似，只不过 Sinusoidal 位置编码是加性的，而 RoPE 可以视为乘性的。在  $\theta_{i}$  的选择上，RoPE 同样沿用了 Sinusoidal 位置编码的方案，即  
+ $\theta_{i}=10000^{-2 i / d}$  ，它可以带来一定的远程衰减性。<br>
+
+![figure16](images/figure16.jpg)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;从图中我们可以看到随着相对距离的变大，内积结果有衰减趋势的出现。因此，选择  $\theta_{i}=10000^{-2 i / d}$ ，确实能带来一定的远程衰减性。论文中还试过以  $\theta_{i}=10000^{-2 i / d}$  为初始化，将  
+ $\theta_{i}$  视为可训练参数，然后训练一段时间后发现  $\theta_{i}$  并没有显著更新，因此干脆就直接固定  $\theta_{i}=10000^{-2 i / d}$  了。<br>
+
+### 3.3.4 llama 中的RoPE 代码实现
 ```python
 # 生成旋转矩阵
 def precompute_freqs_cis(dim: int, seq_len: int, theta: float = 10000.0):
@@ -240,7 +254,6 @@ class Attention(nn.Module):
   # ......
 ```
 
-- [参考链接](https://hub.baai.ac.cn/view/29979)
 - [参考链接](https://hub.baai.ac.cn/view/29979)
 
 # 4 参考链接
