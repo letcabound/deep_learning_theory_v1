@@ -29,7 +29,7 @@ python run_seq2seq_qa.py \
 # 2 t5 介绍
 
 - [t5 论文链接](https://arxiv.org/pdf/1910.10683.pdf)
-- [t5 论文链接](https://links.jianshu.com/go?to=https%3A%2F%2Farxiv.org%2Fabs%2F1910.10683)
+- [t5 论文中译](https://github.com/Elvin-Ma/ai_papers/blob/main/t5/t5.md)
 
 # 3 position embedding 总结
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;不同于RNN、CNN等模型，对于Transformer模型来说，位置编码的加入是必不可少的，因为纯粹的Attention模块是无法捕捉**输入顺序**的，即无法区分不同位置的Token。为此我们大体有两个选择：<br>
