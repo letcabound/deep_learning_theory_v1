@@ -17,6 +17,8 @@ git clone https://github.com/huggingface/diffusers.git
 ## 5.1 clip score
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Clip score是指将文本和图像对输入到OpenAI的CLIP（Contrastive Language-Image Pre-training）模型后分别转换为特征向量，然后计算它们之间的余弦相似度。当CLIP Score较高时，图像-文本对之间的相关性更高。CLIP Score评估自然语言和图像对之间的匹配度和相关性。值越大（接近1），评估越高。<br>
 
+$$CLIP-S(\mathbf{c}, \mathbf{v})=w * \max (\cos (\mathbf{c}, \mathbf{v}), 0)$$
+
 ![论文链接](https://aclanthology.org/2021.emnlp-main.595v2.pdf)
 
 ## 5.2 FID
