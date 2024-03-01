@@ -10,11 +10,11 @@ torchrun --nnodes 1 --nproc_per_node 2  T5_training.py
 ```
 
 # 2 原理及流程
-- DDP 实现原理 <br>
-![DDP 原理](https://engineering.fb.com/wp-content/uploads/2021/07/FSDP-Graph-2.png)
+- DDP 实现原理 vs FSDP 实现原理 <br>
+![DDP 原理 with FSDP 原理](https://engineering.fb.com/wp-content/uploads/2021/07/FSDP-Graph-2.png)
 
-- FSDP 实现原理 <br>
-![FSDP 原理](https://engineering.fb.com/wp-content/uploads/2021/07/FSDP-Graph-2.png)
+- DDP 与 FSDP 流程 <br>
+![流程图](https://img2022.cnblogs.com/blog/1850883/202201/1850883-20220118210250895-529492585.png)
 
 - DDP 和 FSDP 通信上的不同
 ![通信](https://engineering.fb.com/wp-content/uploads/2021/07/FSDP-graph-2a.png)
