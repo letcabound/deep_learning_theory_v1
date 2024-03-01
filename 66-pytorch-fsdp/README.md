@@ -103,8 +103,44 @@ class FullyShardedDataParallel(nn.Module, _FSDPState):
 # 通过这个新添加的参数，ignored_modules可能很快就会被弃用。为了向后兼容，目前保留了ignored_parameters和ignored_modules两者，但是FSDP只允许其中一个被指定为非None。
 ```
 
-**参数解析:** <br>
-- 
+## 4.2 FlatParameter
+- nn.Parameter 的子类
+
+- 这是由FullyShardedDataParallel类使用的扁平化参数。它由一个或多个原始参数组成，这些参数被扁平化并连接起来构建扁平化参数。<br>
+- 根据当前的设计，该参数在逻辑上表示未分片和分片的扁平化参数，并且其数据可以动态更改。<br>
+- 在FullyShardedDataParallel构造函数中，该参数被初始化为未分片的，然后就地进行分片。
+- 在运行时，该参数会被惰性地（重新）初始化。
+- 分片参数数据保存在self._local_shard中，并创建一个新的Tensor self._full_param_padded，它是全局聚集的目标，并且在此后拥有未分片的参数存储。 （参见FlatParamHandle.init_flat_param_attributes方法。）
+- 在整个运行时期间，参数数据根据需要更改存储方式，例如分片的扁平化参数、降低精度的分片化参数或未分片的扁平化参数。
+
+ ```python
+class FlatParameter(nn.Parameter):
+  self._unpadded_unsharded_size:torch.Size  # 未分片未padding的扁平化参数的size
+  self._padded_unsharded_size:torch.Size    # 未分片但padding的扁平化的参数的size
+  self._sharded_size: torch.Size            # 分片参数的大小，包括填充。对于“NO_SHARD”情况，它与未分片的大小相同
+  self._param_infos: Tuple[ParamInfo, ...]  # 每个Parameters 的 info : param_name, module, module_name
+  self._numels: Tuple[int, ...]             # 每个 parameter的元素个数
+  self._shapes: Tuple[torch.Size, ...]      # 每个parameter的shape
+  self._fqns: Tuple[str, ...]               # 原始参数的完全限定名称（FQN）的前缀(在所属句柄的_fully_sharded_module之前)。这些名称在以该模块为根的子树中保证是唯一的。
+  self._num_params:int                      # 被扁平化到这个FlatParameter中的原始参数数量；这是_param_infos、_numels、_shapes和_fqns的长度。
+  self._shared_param_infos: Tuple[SharedParamInfo, ...]  # 共享param的附加info：共享的参数第一次遇到设置为 prim，之后再次遇到便成为 shared parameter
+  self._param_extensions
+  self._modules
+  self._shard_param_offsets
+  self._shard_indices
+  self._shard_numel_padded
+  self._local_shard
+  self._full_param_padded
+  self._full_prec_full_param_padded
+  self._post_backward_hook_state
+  self._mp_shard
+  self._cpu_grad
+  self._saved_grad_shard
+  self._params
+  self._shared_params
+  self._tensors
+  self._is_grad_none
+```
 
 
 # 5 参考文档
