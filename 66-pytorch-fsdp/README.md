@@ -106,12 +106,12 @@ class FullyShardedDataParallel(nn.Module, _FSDPState):
 ## 4.2 FlatParameter
 - nn.Parameter 的子类
 
-- 这是由FullyShardedDataParallel类使用的扁平化参数。它由一个或多个原始参数组成，这些参数被扁平化并连接起来构建扁平化参数。<br>
-- 根据当前的设计，该参数在逻辑上表示未分片和分片的扁平化参数，并且其数据可以动态更改。<br>
-- 在FullyShardedDataParallel构造函数中，该参数被初始化为未分片的，然后就地进行分片。
-- 在运行时，该参数会被惰性地（重新）初始化。
-- 分片参数数据保存在self._local_shard中，并创建一个新的Tensor self._full_param_padded，它是全局聚集的目标，并且在此后拥有未分片的参数存储。 （参见FlatParamHandle.init_flat_param_attributes方法。）
-- 在整个运行时期间，参数数据根据需要更改存储方式，例如分片的扁平化参数、降低精度的分片化参数或未分片的扁平化参数。
+1. 这是由FullyShardedDataParallel类使用的扁平化参数。它由一个或多个原始参数组成，这些参数被扁平化并连接起来构建扁平化参数。<br>
+2. 根据当前的设计，该参数在逻辑上表示未分片和分片的扁平化参数，并且其数据可以动态更改。<br>
+3. 在FullyShardedDataParallel构造函数中，该参数被初始化为未分片的，然后就地进行分片。
+4. 在运行时，该参数会被惰性地（重新）初始化。
+5. 分片参数数据保存在self._local_shard中，并创建一个新的Tensor self._full_param_padded，它是全局聚集的目标，并且在此后拥有未分片的参数存储。 （参见FlatParamHandle.init_flat_param_attributes方法。）
+6. 在整个运行时期间，参数数据根据需要更改存储方式，例如分片的扁平化参数、降低精度的分片化参数或未分片的扁平化参数。
 
  ```python
 class FlatParameter(nn.Parameter):
@@ -123,23 +123,23 @@ class FlatParameter(nn.Parameter):
   self._shapes: Tuple[torch.Size, ...]      # 每个parameter的shape
   self._fqns: Tuple[str, ...]               # 原始参数的完全限定名称（FQN）的前缀(在所属句柄的_fully_sharded_module之前)。这些名称在以该模块为根的子树中保证是唯一的。
   self._num_params:int                      # 被扁平化到这个FlatParameter中的原始参数数量；这是_param_infos、_numels、_shapes和_fqns的长度。
-  self._shared_param_infos: Tuple[SharedParamInfo, ...]  # 共享param的附加info：共享的参数第一次遇到设置为 prim，之后再次遇到便成为 shared parameter
-  self._param_extensions
-  self._modules
-  self._shard_param_offsets
-  self._shard_indices
-  self._shard_numel_padded
-  self._local_shard
-  self._full_param_padded
-  self._full_prec_full_param_padded
-  self._post_backward_hook_state
-  self._mp_shard
-  self._cpu_grad
-  self._saved_grad_shard
-  self._params
-  self._shared_params
-  self._tensors
-  self._is_grad_none
+  self._shared_param_infos: Tuple[SharedParamInfo, ...]  # 共享参数的(非Prim的)Info：共享的参数第一次遇到设置为 prim，之后再次遇到便成为 shared parameter
+  self._param_extensions:Tuple[Optional[Any], ...]       # 参数扩展（即一些参数级别的状态），用于自定义预扁平化和后解扁平化的行为。这是实验性的功能，用户不应该依赖它在未来的存在。
+  self._modules:Set[nn.Module]              # 参数被扁平化的模块集合
+  self._shard_param_offsets:List[Tuple[int, int]) # 当前rank对每个扁平化的参数的[start, end]偏移量（以numel为单位）；对于未在rank间进行分片的任何参数“p”，值为[0，p.numel()-1]。
+  self._shard_indices:Tuple[int, int] # 
+  self._shard_numel_padded:int              # 为此rank的分片化扁平化参数填充的元素数量。
+  self._local_shard:
+  self._full_param_padded:
+  self._full_prec_full_param_padded:
+  self._post_backward_hook_state:
+  self._mp_shard:
+  self._cpu_grad:
+  self._saved_grad_shard:
+  self._params:
+  self._shared_params:
+  self._tensors:
+  self._is_grad_none:
 ```
 
 
