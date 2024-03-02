@@ -129,17 +129,24 @@ class FlatParameter(nn.Parameter):
   self._shard_param_offsets:List[Tuple[int, int]) # 当前rank对每个扁平化的参数的[start, end]偏移量（以numel为单位）；对于未在rank间进行分片的任何参数“p”，值为[0，p.numel()-1]。
   self._shard_indices:Tuple[int, int] # 
   self._shard_numel_padded:int              # 为此rank的分片化扁平化参数填充的元素数量。
-  self._local_shard:
-  self._full_param_padded:
-  self._full_prec_full_param_padded:
-  self._post_backward_hook_state:
-  self._mp_shard:
-  self._cpu_grad:
-  self._saved_grad_shard:
-  self._params:
-  self._shared_params:
-  self._tensors:
-  self._is_grad_none:
+  self._local_shard:Tensor # ***重要***     # 如果使用分片策略，则为带有填充的分片化扁平化参数。如果使用“NO_SHARD”，那么这就是未填充的未分片扁平化参数。
+  self._full_param_padded:Tensor            # 带有padding的未分片扁平化参数。对于“NO_SHARD”情况，此处未定义。当对参数使用混合精度时，此参数具有低精度。
+  self._full_prec_full_param_padded:Tensor  # 带有padding的全精度未分片化参数。在使用混合精度时，用于计算之外的分片还原。这在“NO_SHARD”情况下永远不会定义。
+  self._post_backward_hook_state:Tuple[AccumulateGrad, RemovableHandle] # 扁平化参数的AccumulateGrad对象和后向传播钩子处理句柄.
+  self._mp_shard:Tensor                     # 低精度的分片化Flattened Parameter，带有填充。只有在启用参数混合精度时才定义。“NO_SHARD” 时，此用此Tensor计算。
+  self._cpu_grad:Tensor                     # 存储在CPU上的带padding的 sharded grad。只有在启用参数offload时才定义。
+  self._saved_grad_shard:Tensor             # 先前迭代的用于梯度累积的带填充的分片化梯度，不使用no_sync方法。
+  self._params: Optional[List[nn.Parameter]] # 如果use_orig_params=True，则为原始参数变量，否则为None。
+  self._shared_params:Optional[List[nn.Parameter]] # 如果use_orig_params=True，则为原始共享参数变量，否则为None。
+  self._tensors:Optional[List[Optional[Tensor]]] # 这样可以在use_orig_params=True时保存在前向传播中创建的Tensor视图，并由autograd跟踪，否则为None。
+  self._is_grad_none:Optional[List[bool]]   # 如果use_orig_params=True，则为原始参数梯度上的掩码，指示它是否逻辑上为None，否则为None。
+```
+
+## 4.3 FlatParamHandle
+- 此句柄管理扁平化参数（:class:FlatParameter）。这包括分片和视图管理。
+
+```python
+
 ```
 
 
