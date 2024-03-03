@@ -13,6 +13,12 @@ git clone https://github.com/huggingface/diffusers.git
 
 ![参考链接](http://www.zh0ngtian.tech/posts/c04f0a05.html)
 
+## 3.2 UNet : SD vs SDXL
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SDXL 的第一个 stage 采用的是普通的 DownBlock，而不是基于 attention 的 CrossAttnDownBlock。此外，SDXL 只用了 3 个 stage，只进行了两次 2x 下采样，而之前的 SD 使用 4 个 stage，包含 3 个 2x 下采样。<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SDXL 中 stage2 和 stage3 的两个 CrossAttnDownBlock 中的 transformer block 数量分别为 2 和 10，并且中间的 CrossAttnMidBlock 的 transformer blocks 数量也为 10。<br>
+
+![UNet](http://img.zh0ngtian.tech/2023_12_09_78v5rWA.png)
+
 # 5 评价指标
 ## 5.1 clip score
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Clip score是指将文本和图像对输入到OpenAI的CLIP（Contrastive Language-Image Pre-training）模型后分别转换为特征向量，然后计算它们之间的余弦相似度。当CLIP Score较高时，图像-文本对之间的相关性更高。CLIP Score评估自然语言(Promote 文本)和图像对之间的匹配度和相关性。值越大（接近1），评估越高。<br> ，
