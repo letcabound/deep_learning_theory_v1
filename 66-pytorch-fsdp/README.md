@@ -199,7 +199,7 @@ FullyShardedDataParallel.__init__ --> _init_param_handle_from_module --> _init_p
 
 **_post_backward_hook** <br>
 注册post-backward 钩子来重新对Param 切片 同时 reduce-scatter 他们的梯度。每次前向传播都要重新注册以防止grad_fn 变化。
-- FullyShardedDataParallel--> forward() --> _pre_forward --> _register_post_backward_hooks --> _post_backward_hook --> _reshard --> flat_param.data = flat_param._local_shard && _free_storage(unsharded_flat_param)
+- FullyShardedDataParallel--> forward() --> _pre_forward --> _register_post_backward_hooks --> _post_backward_hook --> _reshard --> FlatParamHandle.reshard --> flat_param.data = flat_param._local_shard && _free_storage(unsharded_flat_param)
 
 **_post_forward_reshard** <br>
 - FullyShardedDataParallel--> forward() --> _post_forward --> reshard_fn(_post_forward_reshard) --> _reshard --> FlatParamHandle.post_reshard() -->  _free_storage(self.flat_param._mp_shard)
