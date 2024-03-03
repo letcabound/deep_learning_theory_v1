@@ -146,9 +146,66 @@ class FlatParameter(nn.Parameter):
 - 此句柄管理扁平化参数（:class:FlatParameter）。这包括分片和视图管理。
 
 ```python
+class FlatParamHandle:
+      def __init__(
+        self,
+        params: Sequence[nn.Parameter],
+        fully_sharded_module: nn.Module,
+        device: torch.device,
+        sharding_strategy: HandleShardingStrategy,
+        offload_params: bool,
+        mp_param_dtype: Optional[torch.dtype],
+        mp_reduce_dtype: Optional[torch.dtype],
+        keep_low_precision_grads: bool,
+        process_group: dist.ProcessGroup,
+        use_orig_params: bool,
+    ):
+        super().__init__()
+        debugpy.breakpoint()
 
+        self.device = device
+        self.process_group = process_group
+        self.rank = process_group.rank()
+        self.world_size = process_group.size()
+        self._sharding_strategy = sharding_strategy
+        self._offload_params = offload_params
+        self._use_orig_params = use_orig_params
+        self._keep_low_precision_grads = keep_low_precision_grads
+        self._training_state = HandleTrainingState.IDLE
+        self._debug_level = dist.get_debug_level()
+        self._fully_sharded_module = fully_sharded_module
+        self._init_flat_param(params, fully_sharded_module, use_orig_params)
+        self._orig_param_dtype = self.flat_param.dtype
+        self._use_unsharded_views(as_params=False)
+        self._init_param_reduce_dtypes(mp_param_dtype, mp_reduce_dtype)
 ```
 
+## 4.4 init 时关键节点
+- 参数cpu --> gpu <br>
+FullyShardedDataParallel.__init__ --> _init_param_handle_from_module --> _move_module_to_device --> module = module.to(device_from_device_id)
+
+- Param gpu --> gpus
+FullyShardedDataParallel.__init__ --> _init_param_handle_from_module --> _sync_module_params_and_buffers --> _sync_params_and_buffers --> dist._broadcast_coalesced
+
+- Param Flatten
+FullyShardedDataParallel.__init__ --> _init_param_handle_from_module --> _init_param_handle_from_params --> FlatParamHandle.__init__ --> FlatParamHandle._init_flat_param --> flatten_params --> flat_param_data = torch.cat(flat_params, dim=0) (是将一个module 中所有 parameter 拼成一个一维 Tensor)
+
+- Param sharded
+FullyShardedDataParallel.__init__ --> _init_param_handle_from_module --> _init_param_handle_from_params --> FlatParamHandle.__init__ && sharded --> FlatParamHandle._get_shard --> _get_unpadded_shard --> chunks = torch.flatten(tensor).chunk(world_size) && chunk = chunks[rank] (参数拆分)
+ 
+## 4.5 runtime 时关键节点
+**_pre_forward_unshard** <br>
+- FullyShardedDataParallel--> forward() --> _pre_forward --> unshard_fn(_pre_forward_unshard) --> _unshard --> FlatParamHandle.unshard --> _all_gather_flat_param --> dist.all_gather_into_tensor
+
+**_post_backward_hook** <br>
+注册post-backward 钩子来重新对Param 切片 同时 reduce-scatter 他们的梯度。每次前向传播都要重新注册以防止grad_fn 变化。
+- FullyShardedDataParallel--> forward() --> _pre_forward --> _register_post_backward_hooks --> _post_backward_hook --> _reshard --> flat_param.data = flat_param._local_shard && _free_storage(unsharded_flat_param)
+
+**_post_forward_reshard** <br>
+- FullyShardedDataParallel--> forward() --> _post_forward --> reshard_fn(_post_forward_reshard) --> _reshard --> FlatParamHandle.post_reshard() -->  _free_storage(self.flat_param._mp_shard)
+
+**_pre_backward_hook** <br>
+- FullyShardedDataParallel--> forward() --> _post_forward --> _register_pre_backward_hooks --> t.register_hook(_pre_backward_hook) --> _unshard
 
 # 5 参考文档
 - [Pytorch FSDP Paper](https://arxiv.org/pdf/2304.11277.pdf)
