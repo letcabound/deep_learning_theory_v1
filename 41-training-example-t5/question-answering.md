@@ -181,7 +181,7 @@ $$q_{m}^{\top} k_{n}=(R_{\Theta, m}^{d} W_{q} x_{m})^{\top}(R_{\Theta, n}^{d} W_
 ![figure15](images/figure15.jpg)
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;可以看到，RoPE 形式上和前面公式 Sinusoidal 位置编码有点相似，只不过 Sinusoidal 位置编码是加性的，而 RoPE 可以视为乘性的。在  $\theta_{i}$  的选择上，RoPE 同样沿用了 Sinusoidal 位置编码的方案，即  
- $\theta_{i}=10000^{-2 i / d}$  ，它可以带来一定的远程衰减性。<br>
+ $\theta_{i}=10000^{-2 i / d}$  (d 就是 seq_len) ，它可以带来一定的远程衰减性。<br>
 
 ![figure16](images/figure16.jpg)
 
