@@ -82,7 +82,7 @@ def add_noise(
 
 $$CLIP-SCORE(\mathbf{c}, \mathbf{v})=w * \max (\cos (\mathbf{c}, \mathbf{v}), 0)$$
 
-![论文链接](https://aclanthology.org/2021.emnlp-main.595v2.pdf)
+- [论文链接](https://aclanthology.org/2021.emnlp-main.595v2.pdf)
 
 ## 5.2 FID
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FID(Fréchet Inception Distance) score 是一种用于评估生成图像质量的度量标准，专门用于评估模型生成图片的性能，FID可以衡量生成图像的逼真度(image fidelity), 计算公式如下所示：<br>
@@ -109,7 +109,7 @@ FID 值越低代表两个分布越相似,生成的数据与真实数据分布越
 - SD 2.1 : SD 2.1是在SD 2.0的基础上放开了限制(降低审查标准punsafe=0.98) 继续finetune，所以增强了人像的生成效果。
 - SD unCLIP : 是在原来的SD模型的基础上增加了CLIP的image encoder的nosiy image embeddings作为condition。
 
-## 6.2 UNet : SD vs SDXL
+## 6.2 从 SD 到 SDXL
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SDXL 的第一个 stage 采用的是普通的 DownBlock，而不是基于 attention 的 CrossAttnDownBlock。此外，SDXL 只用了 3 个 stage，只进行了两次 2x 下采样，而之前的 SD 使用 4 个 stage，包含 3 个 2x 下采样。<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SDXL 中 stage2 和 stage3 的两个 CrossAttnDownBlock 中的 transformer block 数量分别为 2 和 10，并且中间的 CrossAttnMidBlock 的 transformer blocks 数量也为 10。<br>
 
