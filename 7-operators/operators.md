@@ -149,6 +149,9 @@ def Batchnorm(x, gamma, beta, bn_param):
 1. LN中同层神经元输入拥有相同的均值和方差，不同的输入样本有不同的均值和方差；
 2. BN中则针对不同神经元输入计算均值和方差，同一个batch中的输入拥有相同的均值和方差。
 3. 所以，LN不依赖于batch的大小和输入sequence的深度，因此可以用于batchsize为1和RNN中对边长的输入sequence的normalize操作。
+
+**CV 和 NLP 中 LN的区别** <br>
+![image](https://ask.qcloudimg.com/http-save/yehe-6930088/b6febb5b50b5392efe0d408629580481.png)
    
 - [pytorch 实现](https://pytorch.org/docs/stable/generated/torch.nn.LayerNorm.html#torch.nn.LayerNorm)
 ```python
