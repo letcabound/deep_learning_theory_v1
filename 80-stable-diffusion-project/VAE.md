@@ -59,6 +59,8 @@ $$p(z \mid x)=\frac{p(x \mid z) p(z)}{p(x)}$$
 
 变分推断和变分自编码器的最终目标是相同的，都是将  $Q(z \mid x)$ 尽量去近似  $p(z \mid x, \theta)$ , 我们知道有一种距离可以量化两种分布的差异Kullback-Leibler divergence—KL散度，我们要尽量减小KL散度。<br>
 
+## 
+在这种情况下，我们可以让变分近似后验是一个具有对角协方差结构的多元高斯:
 
 # 4 参考文献
 - [vae 导读](https://www.cnblogs.com/lvzhiyi/p/15822716.html)
