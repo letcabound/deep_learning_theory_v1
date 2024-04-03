@@ -64,5 +64,6 @@ $$p(z \mid x)=\frac{p(x \mid z) p(z)}{p(x)}$$
 
 # 4 参考文献
 - [vae 导读](https://www.cnblogs.com/lvzhiyi/p/15822716.html)
+- [vae 导读2](https://towardsdatascience.com/understanding-variational-autoencoders-vaes-f70510919f73)
 
 
