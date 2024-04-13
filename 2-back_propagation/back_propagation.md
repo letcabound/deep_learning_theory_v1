@@ -2,7 +2,7 @@
 
 ## 1.1 神经网络训练流程概述
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;当我们使用前馈神经网络（feedfowrward neural network）接收输入 x 并产生输出 y 时，信息通过网络向前流动。输入 x 提供初始信息，然后传播到每一层的隐藏单元，最终产生输出 y。这称之为前向传播（forward propagation）。
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;当我们使用前馈神经网络（feedforward neural network）接收输入 x 并产生输出 y 时，信息通过网络向前流动。输入 x 提供初始信息，然后传播到每一层的隐藏单元，最终产生输出 y。这称之为前向传播（forward propagation）。
 在训练过程中，前向传播可以持续向前直到它产生一个**标量** 的 损失函数 $J(\theta)$ 。
 反向传播（back propagation）算法经常简称为backprop，允许来自代价函数的信息通过网络向后流动，以便计算梯度。<br>
 
