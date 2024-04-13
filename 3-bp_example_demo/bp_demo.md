@@ -73,7 +73,7 @@ $$\frac{\partial out_{o1}}{\partial net_{o1}}=out_{o1}(1-out_{o1})=0.891090(0.01
 
 - 线性项导数计算
 $$net_{o1}=w_{7} \times out_{h1}+w_{9} \times out_{h2}+w_{11} \times out_{h3}+b_{2} * 1$$
-$$\frac{\partial net_{o1}}{\partial w_{7}}=1 \times out_{h1} \times w_{7} + 0 + 0 + 0=0.912934$$
+$$\frac{\partial net_{o1}}{\partial w_{7}}=1 \times w_{7} + 0 + 0 + 0=0.912934$$
 
 - 链式求导：
 $$\frac{\partial E_{total}}{\partial w_{7}} = 0.88109 * 0.097049 * 0.912934 = 0.078064$$
