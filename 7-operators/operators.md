@@ -249,6 +249,20 @@ def GroupNorm(x, gamma, beta, G=16):
     return results
 ```
 
+## 3.5 Switch norm
+- [论文链接](https://arxiv.org/pdf/1806.10779.pdf)
+
+SN是一种覆盖特征图张量各个维度来计算统计信息的归一化方法，不依赖minibatch size的同时对各个维度统计有很好的鲁棒性. <br>
+
+![figure15](images/op-figure15.jpg)
+
+![figure16](images/op-figure16.jpg)
+
+## 3.6 RMS Norm
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;layer normalization 重要的两个部分是平移不变性和缩放不变性。Root Mean Square Layer Normalization 认为 layer normalization 取得成功重要的是缩放不变性，而不是平移不变性。因此，去除了计算过程中的平移，只保留了缩放，进行了简化，提出了RMS Norm (Root Mean Square Layer Normalization)，即均方根 norm。<br>
+
+- [论文链接](https://arxiv.org/pdf/1910.07467.pdf)
+
 # 4 Pooling
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Pooling(池化)是CNN 中常用的操作，通过在特定区域内对特征进行(reduce)来实现的。<br>
 
