@@ -1,4 +1,5 @@
-# run
+# 1. 启动训练脚本
+## 1.1 训练脚本
 ```python
 pip install deepspeed
 git clone https://github.com/microsoft/DeepSpeedExamples.git
@@ -6,11 +7,11 @@ cd DeepSpeedExamples/training/cifar
 bash run_ds.sh
 ```
 
-# 相关环境依赖
+## 1.2 相关环境依赖
 - gcc 版本要小于 10;
 - /usr/bin/gcc --> 链接到 /usr/bin/gcc-7 即可;
 
-# 启动指令
+# 2 启动指令源码解读
 ```python
 deepspeed --bind_cores_to_rank cifar10_deepspeed.py --deepspeed $@
 ```
@@ -492,6 +493,94 @@ class CUDA_Accelerator(DeepSpeedAccelerator):
 
     ...
 ```
+
+# 3 训练脚本解读
+
+## 3.1 单进程读取数据
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pytorch在分布式训练过程中，对于数据的读取是采用主进程预读取并缓存，然后其它进程从缓存中读取，不同进程之间的数据同步具体通过torch.distributed.barrier()实现, torch中采用了barrier()函数对其它非主进程进行阻塞，来达到同步的目的。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;torch.distributed.barrier()，设置一个阻塞栅栏，让符合条件进程处于等待状态，等待所有进程到达栅栏处（包括主进程数据处理完毕）；如果处理 create dataloader()函数的进程是主进程，其会直接去读取数据并处理，然后其处理结束之后会接着遇到torch.distributed.barrier()，此时，所有进程都到达了当前的栅栏处，这样所有进程就达到了同步，并同时得到释放。<br>
+
+**要点是 不同进程可能在不同位置到达 barrier 处** <br>
+
+
+## 3.2 ds 相关配置信息
+```python
+{'train_batch_size': 16, 'steps_per_print': 2000, 'optimizer': {'type': 'Adam', 'params': {...}}, 'scheduler': {'type': 'WarmupLR', 'params': {...}}, 
+'gradient_clipping': 1.0, 'prescale_gradients': False, 'bf16': {'enabled': False}, 'fp16': {'enabled': True, 'fp16_master_weights_and_grads': False, 'loss_scale': 0, 
+'loss_scale_window': 500, 'hysteresis': 2, 'min_loss_scale': 1, 'initial_scale_power': 15}, 'wall_clock_breakdown': False, 
+'zero_optimization': {'stage': 0, 'allgather_partitions': True, 'reduce_scatter': True, 'allgather_bucket_size': 50000000, 
+'reduce_bucket_size': 50000000, 'overlap_comm': True, 'contiguous_gradients': True, 'cpu_offload': False}}
+```
+
+## 3.3 deepspeed.initialize
+
+- /home/mtn/DeepSpeed/deepspeed/__init__.py
+
+### 3.3.1 用户接口** <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;先初始化DeepSpeed配置(即DeepSpeedConfig)，然后初始化DeepSpeed引擎(DeepSpeedHybridEngine/DeepSpeedEngine/PipelineEngint). <br>
+
+　　返回engine、engine的optimizer、engine的training_dataloader、engine的lr_scheduler；
+```python
+    model_engine, optimizer, trainloader, __ = deepspeed.initialize(
+        args=args,
+        model=net,
+        model_parameters=parameters,
+        training_data=trainset,
+        config=ds_config,
+    )
+```
+
+### 3.3.2 initialize 中通信后端初始化
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;始化加速器并更新到全局变量ds_accelerator(详见get_accelerator函数)，并初始化分布式计算后端框架(用于多个计算节点协同工作以加速训练，处理模型参数和梯度同步、通信等操作，存入全局变量ccl_backend，CCLBackend类，详见init_deepspeed_backend函数)；<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;调用父类TorchBackend完成初始化(实际上调用torch.distributed.init_process_group初始化torch分布式环环境中进程组)；<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通过ccl_comm_op(即CCLCommBuilder)的get_kvs_addr创建一个主要的key-value存储器并将其内存地址广播(TorchBackend的broadcast方法)给其他机器, 根据当前机器编号(rank)、key-value存储器地址等初始化ccl_comm_op(即CCLCommBuilder类) <br>
+
+- available_coll：通信操作名列表(broadcast、all_reduce、inference_all_reduce、all_reduce_caching、barrier)，详见ccl_comm_op的get_available_coll；<br>
+
+```python
+# cdb = TorchBackend(dist_backend, timeout, init_method, rank, world_size)
+# TorchBackend 中对 pytorch 中的分布式 进行了封装
+from deepspeed import comm as dist
+dist_backend = get_accelerator().communication_backend_name()
+dist.init_distributed(dist_backend=dist_backend, dist_init_required=dist_init_required)
+```
+
+### 3.3.3 DeepSpeedConfig 初始化
+```python
+# DeepSpeedConfig初始化
+# _param_dict：传入的配置dict；
+# 根据_param_dict初始化如下变量，详见_initialize_params函数
+train_batch_size：
+train_micro_batch_size_per_gpu：
+gradient_accumulation_steps：
+steps_per_print：配置中取值10；
+prescale_gradients：配置中配置为false；
+gradient_clipping：配置中取值为1.0；
+zero_config：zero_optimization配置参数；
+zero_optimization_stage：zero_optimization配置参数中"stage"参数；
+zero_enabled：zero_optimization_stage是否大于0；
+……
+activation_checkpointing_config：初始化DeepSpeedActivationCheckpointingConfig类；
+comms_config：初始化DeepSpeedCommsConfig类；
+flops_profiler_config：初始化DeepSpeedFlopsProfilerConfig类；
+autotuning_config：初始化DeepSpeedAutotuningConfig类；
+nebula_config：初始化DeepSpeedNebulaConfig类；
+weight_quantization_config：初始化WeightQuantConfig类；
+ 设置训练batch_size相关参数(如果没有配置则根据其他配置计算)，详见_configure_train_batch_size函数
+gradient_accumulation_steps：train_batch_size/(train_micro_batch_size_per_gpu*分布式进程个数)；
+train_micro_batch_size_per_gpu：train_batch_size/(gradient_accumulation_steps*分布式进程个数)
+train_batch_size：train_micro_batch_size_per_gpu*分布式进程个数*gradient_accumulation_steps
+train_micro_batch_size_per_gpu：train_batch_size/分布式进程个数(如果没有配置gradient_accumulation_steps，则gradient_accumulation_steps设置为1)；
+gradient_accumulation_steps：train_micro_batch_size_per_gpu*分布式进程个数(如果没有配置gradient_accumulation_steps，则gradient_accumulation_steps设置为1)；
+ 合法性检测，详见_do_sanity_check函数；
+```
+
+### 3.3.4 
+
+
 
 
 
