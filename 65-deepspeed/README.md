@@ -581,6 +581,9 @@ gradient_accumulation_steps：train_micro_batch_size_per_gpu*分布式进程个�
 ### 3.3.4 
 
 
+# 4 参考文献
+- [参考文档](https://www.zhangzhenhu.com/deepspeed/stage2-%E5%88%9D%E5%A7%8B%E5%8C%96.html)
+
 
 
 
