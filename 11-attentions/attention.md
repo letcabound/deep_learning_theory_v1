@@ -273,6 +273,23 @@ $$softmax(x)=\frac{f(x)}{\ell(x)}.$$
 15. end for
 16. 将 O 返回
 
+## Flash-Attention 效果
+1. 内存开销： IO Complexity
+- 标准attention
+$$ \theta(Nd + N^{2})$$
+- Flash attention
+$$ \Theta(N^2d^2M^{-1})$$
+
+**内存占用和序列长度呈线性关系** <br>
+**For typical values of d(head-hidden-size 64-128) and 𝑀 (around 100KB), 𝑑2 is many times smaller than M.** <br>
+
+2. 加速效果
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;HBM的访问次数是决定注意力运行时间的主要因素。 Flash-Attention 用了recompute，总的计算FLOP高于传统Attention，但总的运行时间还是加速的。<br>
+- 在常见的序列长度（最高为2K）上比标准注意力快3x倍;
+- BERT-Large(MLPerf1.1) 加速15%(seq-len : 512);
+- GPT-2 加速3x (seq-len : 1k);
+- 可增加序列长度，提升模型性能.
+
 ## 11.6 重计算(recompute)
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;我们的目标之一是不在反向传播过程中存储 $𝑂(𝑁^2)$ 个中间值。反向传播通常需要矩阵 $S、P ∈ R^{N \times N}$ 来计算相对于Q、K、V的梯度。然而，通过存储输出O和softmax归一化统计信息(𝑚, ℓ)，我们可以在反向传播过程中从SRAM中的Q、K、V块轻松地重新计算注意力矩阵S和P。这可以看作是一种选择性梯度检查点的形式。虽然已经提出了梯度检查点技术来减少所需的最大内存量，但所有已知的实现都需要以速度换取内存。相比之下，即使有更多的FLOPs，我们的重计算由于减少了HBM访问次数而加速了反向传播过程。<br>
 
@@ -281,7 +298,7 @@ $$softmax(x)=\frac{f(x)}{\ell(x)}.$$
   
 # 12 # flash-attention 2
 - FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning <br>
-[FlashAttention2 论文链接](https://arxiv.org/pdf/2307.08691.pdf)
+- [FlashAttention2 论文链接](https://arxiv.org/pdf/2307.08691.pdf)
 
 # 13 大模型推理加速利器：KV Cache
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;假设 K 和 V 能直接存在缓存中，模型规模小还好，一旦模型规模很大长度很长时，KV 根本就存不进缓存。<br>
