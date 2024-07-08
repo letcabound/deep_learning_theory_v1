@@ -1,6 +1,49 @@
 # 1. AMP 介绍
 - [论文](https://github.com/Elvin-Ma/ai_papers/blob/main/mixed_precision/mixed-precision.md)
 
+- Pytorch 的 AMP 其实是从 apex 简化而来的，和 apex 的 O1 相当。
+
+**apex 几个级别** <br>
+
+- O0: FP32 training
+```c++
+Your incoming model should be FP32 already, so this is likely a no-op. O0 can be useful to establish an accuracy baseline.
+
+Default properties set by O0:
+cast_model_type=torch.float32
+patch_torch_functions=False
+keep_batchnorm_fp32=None (effectively, "not applicable," everything is FP32)
+master_weights=False
+loss_scale=1.0
+```
+
+- O1: Mixed Precision (recommended for typical use)
+```c++
+Patch all Torch functions and Tensor methods to cast their inputs according to a whitelist-blacklist model. Whitelist ops (for example, Tensor Core-friendly ops like GEMMs and convolutions) are performed in FP16. Blacklist ops that benefit from FP32 precision (for example, softmax) are performed in FP32. O1 also uses dynamic loss scaling, unless overridden.
+
+Default properties set by O1:
+cast_model_type=None (not applicable)
+patch_torch_functions=True
+keep_batchnorm_fp32=None (again, not applicable, all model weights remain FP32)
+master_weights=None (not applicable, model weights remain FP32)
+loss_scale="dynamic"
+```
+
+- O2: "Almost FP16" Mixed Precision
+```c++
+O2 casts the model weights to FP16, patches the model's forward method to cast input data to FP16, keeps batchnorms in FP32, maintains FP32 master weights, updates the optimizer's param_groups so that the optimizer.step() acts directly on the FP32 weights (followed by FP32 master weight->FP16 model weight copies if necessary), and implements dynamic loss scaling (unless overridden). Unlike O1, O2 does not patch Torch functions or Tensor methods.
+
+Default properties set by O2:
+cast_model_type=torch.float16
+patch_torch_functions=False
+keep_batchnorm_fp32=True
+master_weights=True
+loss_scale="dynamic"
+```
+
+
+
+
 # 2. pytorch 实现
 ```python
 import torch
@@ -62,3 +105,7 @@ for epoch in epochs:
 3. 在训练的后期，loss已经趋近收敛稳定，梯度更新的幅度往往小了，这个时候可以允许更高的损失缩放因子来再次防止数据下溢。
 4. 因此，动态损失缩放算法会尝试在每N（N=2000）次迭代将损失缩放增加F倍数，然后执行步骤2检查是否溢出。
 
+# 4 参考链接
+- [nvidia-developer](https://developer.nvidia.com/blog/mixed-precision-training-deep-neural-networks/)
+- [user-guide-pdf](https://docs.nvidia.com/deeplearning/performance/pdf/Training-Mixed-Precision-User-Guide.pdf)
+- [apex](https://github.com/NVIDIA/apex/blob/master/docs/source/amp.rst)
