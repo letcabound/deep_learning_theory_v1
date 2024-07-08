@@ -41,8 +41,17 @@ master_weights=True
 loss_scale="dynamic"
 ```
 
+- O3: FP16 training
+```c++
+O3 may not achieve the stability of the true mixed precision options O1 and O2. However, it can be useful to establish a speed baseline for your model, against which the performance of O1 and O2 can be compared. If your model uses batch normalization, to establish "speed of light" you can try O3 with the additional property override keep_batchnorm_fp32=True (which enables cudnn batchnorm, as stated earlier).
 
-
+Default properties set by O3:
+cast_model_type=torch.float16
+patch_torch_functions=False
+keep_batchnorm_fp32=False
+master_weights=False
+loss_scale=1.0
+```
 
 # 2. pytorch 实现
 ```python
