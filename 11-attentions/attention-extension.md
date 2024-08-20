@@ -112,13 +112,13 @@ $$softmax(x)=\frac{f(x)}{\ell(x)}.$$
 
 ## Flash-Attention 效果
 1. 内存开销： IO Complexity
-- 标准attention
-$$ \theta(Nd + N^{2})$$
-- Flash attention
-$$ \Theta(N^2d^2M^{-1})$$
+- 标准attention <br>
+$$\theta(Nd + N^{2})$$
+- Flash attention <br>
+$$\Theta(N^2d^2M^{-1})$$
 
 **内存占用和序列长度呈线性关系** <br>
-**For typical values of d(head-hidden-size 64-128) and 𝑀 (around 100KB), 𝑑2 is many times smaller than M.** <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For typical values of d(head-hidden-size 64-128) and 𝑀 (around 100KB), 𝑑2 is many times smaller than M. <br>
 
 2. 加速效果
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;HBM的访问次数是决定注意力运行时间的主要因素。 Flash-Attention 用了recompute，总的计算FLOP高于传统Attention，但总的运行时间还是加速的。<br>
