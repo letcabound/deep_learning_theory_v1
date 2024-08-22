@@ -60,6 +60,10 @@ $$\mathbf{S}=\mathbf{Q K}^{\top} \in \mathbb{R}^{N \times N}, \quad \mathbf{P}=s
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这个问题在应用于注意力矩阵的其他逐元素操作时会变得更加严重，例如应用于 S 的掩码操作或应用于 P 的dropout操作。因此，已经有很多尝试将多个逐元素操作融合在一起，例如将掩码操作与softmax操作融合在一起[77]。<br>
 在第3.2节中，我们将展示标准的注意力实现在序列长度 N 方面进行 HBM 访问的二次方增长。我们还将比较标准注意力和我们的方法（FlashAttention）的FLOPs数量和HBM访问数量。<br>
 
+- **计算简图** <br>
+![standard attention](images/standard_attention0.png)
+
+- **standard attention pseudo-code** <br>
 ![algorithm0](images/flash_attention1_algorithm0.jpg)
 
 ## 3.3 准备：切片的方式计算softmax
@@ -69,6 +73,8 @@ $$m(x):=max(x_{i}), \quad  f(x):=\left[\begin{array}{lll} e^{x_{1}-m(x)} , \ldot
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; *(注释：在数学中，":=" 是赋值符号，表示将右侧的值赋给左侧的变量或表达式。它常用于编程语言中表示变量的初始化或赋值操作)* <br>
 
+- **safe-softmax 图解** <br>
+![safe-softmax](images/safe-softmax.png)
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;对于向量 $𝑥^{(1)}, 𝑥^{(2)} ∈ R^B$ ，我们可以将拼接后的向量 $𝑥 = [𝑥^{(1)}; 𝑥^{(2)}] ∈ R^{(2B)}$ 的 softmax 进行分解，如下所示：<br>
 
@@ -98,15 +104,25 @@ $$softmax(x)=\frac{f(x)}{\ell(x)}.$$
 - **FlashAttention forward 实际伪代码** <br>
 ![figure25](images/flash-attention1-algorithm2.png)
 
+- **易理解简图** <br>
+**step1** <br>
+![figure26](images/flash-attention-simple-0.png)
+
+**step2** <br>
+![figure27](images/flash-attention-simple-1.png)
+
+**step3** <br>
+![figure28](images/flash-attention-simple-2.png)
 
 ## 3.6 FlashAttention1 Backward 伪代码
 
 - **普通Attention backwad** <br>
 ![figure26](images/flash-attention1-algorithm3.png)
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;从前向传递中保存伪随机数生成器获取状态并在反向过程中重新生成dropout mask.<br>
+
 - **FlashAttention1 Backward** <br>
 ![figure26](images/flash-attention1-algorithm4.png)
-
 
 ## 3.7 Flash-Attention 效果
 1. 内存开销： IO Complexity <br>
