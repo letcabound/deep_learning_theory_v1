@@ -150,3 +150,4 @@ $$\Theta(N^2d^2M^{-1})$$
 - [参考链接](https://towardsdatascience.com/attn-illustrated-attention-5ec4ad276ee3)
 - [书籍 + 代码](https://zh-v2.d2l.ai/chapter_attention-mechanisms/attention-scoring-functions.html)
 - [read paper](https://readpaper.com/paper/2963403868)
+- [image](https://blog.csdn.net/qq_27590277/article/details/136181185)
