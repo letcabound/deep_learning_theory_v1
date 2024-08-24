@@ -104,7 +104,7 @@ $$softmax(x)=\frac{f(x)}{\ell(x)}.$$
 - **FlashAttention forward 实际伪代码** <br>
 ![figure25](images/flash_attention1-algorithm2.png)
 
-- **易理解简图** <br>
+- 逻辑运算简图 <br>
 **step1** <br>
 ![figure26](images/flash-attention-simple-0.png)
 
@@ -113,6 +113,9 @@ $$softmax(x)=\frac{f(x)}{\ell(x)}.$$
 
 **step3** <br>
 ![figure28](images/flash-attention-simple-2.png)
+
+- 官方逻辑图
+![figure28](images/flash-attention-simple-3.png)
 
 ## 3.6 FlashAttention1 Backward 伪代码
 
@@ -124,6 +127,9 @@ $$softmax(x)=\frac{f(x)}{\ell(x)}.$$
 - FlashAttention1 Backward <br>
 ![figure26](images/flash_attention1-algorithm4.png)
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;反向传播中，通过在输入块Q、K、V已加载到SRAM中重新计算注意力矩阵S和P的值，FlashAttention避免了需要存储大型中间值。由于不需要保存大小为𝑁×𝑁的大型矩阵S和P，FlashAttention在节省内存方面可以达到10-20倍，具体取决于序列长度（内存需求与序列长度𝑁成线性关系，而不是二次关系）。由于减少内存读写，反向传播还实现了2-4倍的挂钟速度提升。<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在第2.2节的方程中，反向传播应用了平铺。尽管从概念上讲，反向传播比正向传播更简单（没有softmax重新缩放），但在实现上却更为复杂。这是因为在反向传播中需要在SRAM中保持更多的值来执行5次矩阵乘法，而在正向传播中只需要执行2次矩阵乘法。<br>
+
 ## 3.7 Flash-Attention 效果
 1. 内存开销： IO Complexity <br>
 - 标准attention <br>
@@ -131,7 +137,7 @@ $$\theta(Nd + N^{2})$$
 - Flash attention <br>
 $$\Theta(N^2d^2M^{-1})$$
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**内存占用和序列长度呈线性关系** <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**内存占用和序列长度呈线性关系** <br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For typical values of d(head-hidden-size 64-128) and 𝑀 (around 100KB), 𝑑2 is many times smaller than M. <br>
 
 2. 加速效果 <br>
@@ -146,10 +152,25 @@ $$\Theta(N^2d^2M^{-1})$$
 
 - [代码地址](https://github.com/Dao-AILab/flash-attention)
 - [FlashAttention1 论文链接](https://arxiv.org/abs/2205.14135)
+
+## 3.8 FlashAttention1 的不足之处
+- output 需要反复读写, 循环一次Q才完成output的一次累计, 需要反复往shared memory 上读写中间结果;
+- softmax 操作是在row, 维度上的, 然而现在每次遍历都需要保存一次 $m_{i} l_{i}$ ;
+
+**有没有什么办法可以解决这个问题呢？** <br>
   
-# 4 flash-attention2
-- FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning <br>
+# 4 FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning <br>
 - [FlashAttention2 论文链接](https://arxiv.org/pdf/2307.08691.pdf)
+
+## 4.1 softmax-trick
+![softmax-trick](images/flash-attention2-softmax-trick.png)
+
+## 4.2 forward pass
+![forward-pass](images/flash-attention2-forward.png)
+
+## 4.3 backward pass
+![backward-pass](images/flash-attention2-backward.png)
+
 
 # 5 大模型推理加速利器：KV Cache
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;假设 K 和 V 能直接存在缓存中，模型规模小还好，一旦模型规模很大长度很长时，KV 根本就存不进缓存。<br>
