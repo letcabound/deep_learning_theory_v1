@@ -73,9 +73,6 @@ $$m(x):=max(x_{i}), \quad  f(x):=\left[\begin{array}{lll} e^{x_{1}-m(x)} , \ldot
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; *(注释：在数学中，":=" 是赋值符号，表示将右侧的值赋给左侧的变量或表达式。它常用于编程语言中表示变量的初始化或赋值操作)* <br>
 
-- **safe-softmax 图解** <br>
-![safe-softmax](images/safe-softmax.png)
-
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;对于向量 $𝑥^{(1)}, 𝑥^{(2)} ∈ R^B$ ，我们可以将拼接后的向量 $𝑥 = [𝑥^{(1)}; 𝑥^{(2)}] ∈ R^{(2B)}$ 的 softmax 进行分解，如下所示：<br>
 
 $$m(x)=m([x^{(1)}, x^{(2)}])=\max (m(x^{(1)}), m(x^{(2)})),$$
@@ -85,6 +82,9 @@ $$f(x)=[e^{m(x^{(1)})-m(x)} f(x^{(1)}) \quad e^{m(x^{(2)})-m(x)} f(x^{(2)})],$$
 $$\ell(x)=\ell([x^{(1)}, x^{(2)}])=e^{m(x^{(1)})-m(x)} \ell(x^{(1)})+e^{m(x^{(2)})-m(x)} \ell(x^{(2)}),$$
 
 $$softmax(x)=\frac{f(x)}{\ell(x)}.$$
+
+- **safe-softmax 图解** <br>
+![safe-softmax](images/safe-softmax.png)
 
 ## 3.4 flash-attention-1 算法图解
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;我们使用CUDA实现了FlashAttention，以实现对内存访问的细粒度控制，并将所有注意力操作融合到一个GPU内核中。尽管由于重新计算而增加了浮点运算量，但由于大大减少了对HBM的访问量，我们的算法比标准注意力运行得更快（下图图1右图所示，GPT-2上最高可达7.6倍），并且使用的内存量与序列长度呈线性关系。<br>
@@ -99,10 +99,10 @@ $$softmax(x)=\frac{f(x)}{\ell(x)}.$$
 
 **前提：Q K V 三个矩阵的形状均为[N x d], 芯片上 SRAM 尺寸为大小为 M 个elements.** <br>
 - **FlashAttention 简化伪代码：** <br>
-![figure24](images/flash-attention1-algorithm.png)
+![figure24](images/flash_attention1-algorithm1.png)
 
 - **FlashAttention forward 实际伪代码** <br>
-![figure25](images/flash-attention1-algorithm2.png)
+![figure25](images/flash_attention1-algorithm2.png)
 
 - **易理解简图** <br>
 **step1** <br>
