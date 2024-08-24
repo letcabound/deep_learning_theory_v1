@@ -1,4 +1,4 @@
-![图片](https://github.com/user-attachments/assets/134d1d68-25b7-4d86-ab5b-2bef91a62fd1)# 1 MQA（Multi Query Attention）
+# 1 MQA（Multi Query Attention）
 - 背景：<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MQA（Multi Query Attention）最早是出现在2019年谷歌的一篇论文 《Fast Transformer Decoding: One Write-Head is All You Need》，之所以没有被关注到，是因为文本生成类任务还没这么火热，解码序列长度也没有现阶段大模型的要求那么高。<br>
 
