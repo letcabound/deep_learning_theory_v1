@@ -162,15 +162,39 @@ $$\Theta(N^2d^2M^{-1})$$
 # 4 FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning <br>
 - [FlashAttention2 论文链接](https://arxiv.org/pdf/2307.08691.pdf)
 
-## 4.1 softmax-trick
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;对FlashAttention算法进行了调整，以减少非矩阵乘法FLOP的数量。这是因为现代GPU具有专门的计算单元（例如，Nvidia GPU上的张量核心），使矩阵乘法速度更快。举个例子，A100 GPU在FP16/BF16矩阵乘法的最大理论吞吐量为312 TFLOPs/s，但在非矩阵乘法FP32上只有19.5 TFLOPs/s。另一种思考方式是，每个非矩阵乘法FLOP的成本是矩阵乘法FLOP的16倍。为了保持高吞吐量（例如，超过最大理论TFLOPs/s的50%以上），我们希望尽可能多地花费时间在矩阵乘法FLOP上。<br>
+
+## 4.1 softmax-trick v1 vs v2
+- FlashAttention1-softmax-trick
+![softmax-trick](images/flash-attention1-softmax-trick.png)
+
+- FlashAttention2-softmax-trick
 ![softmax-trick](images/flash-attention2-softmax-trick.png)
+
+**核心不同** <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Output 不需要每次循环都进行缩放, 只需在Last循环缩放一次. <br>
 
 ## 4.2 forward pass
 ![forward-pass](images/flash-attention2-forward.png)
 
+**核心改进点** <br>
+- 循环顺序更改，避免了多次读写 shared memory 的操作;
+- attention-score 分母缩放顺序调节避免了非矩阵的 FLOPs 操作, 避免了对每个block用 $l$ 进行缩放;
+- 每行最大值 m 和 sum(exp) 值可以一起存储: $L^{j} = m^{j} + log(l^{j})$ ;
+
+**causal masking 的情况** <br>
+- 对于所有列索引均大于行索引的块（对于大序列长度约占一半的块），我们可以跳过对该块的计算。与没有因果掩码的注意力相比，这将导致大约1.7-1.8倍的加速。
+- 对于那些确保行索引严格小于列索引的块，我们不需要应用因果掩码。这意味着对于每一行，我们只需要将因果掩码应用到1个块（假设是方块块）。
+
 ## 4.3 backward pass
 ![backward-pass](images/flash-attention2-backward.png)
 
+**核心要点** <br>
+- 内外层循环和FlashAttention1 情况相同;
+- 前向时计算row 的 max 和 sum(exp) 保存成 $L^{j} = m^{j} + log(l^{j})$ , 导致反向时 $exp(Q}K^{T} - L)$ 一次计算成功;
+
+**多查询注意力和分组查询注意力**
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;多查询注意力（MQA）和分组查询注意力（GQA）是注意力的变体，其中多个查询头关注相同的键头和值头，以减少推断期间KV缓存的大小。我们不需要为计算复制键头和值头，而是隐式地操作头部的索引来执行相同的计算。在反向传播中，我们需要对隐式复制的不同头部之间的梯度dK和dV进行求和。<br>
 
 # 5 大模型推理加速利器：KV Cache
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;假设 K 和 V 能直接存在缓存中，模型规模小还好，一旦模型规模很大长度很长时，KV 根本就存不进缓存。<br>
