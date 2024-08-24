@@ -11,7 +11,7 @@
 - 效果：<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;推理速度上生成一个 token 时 MHA 和 MQA 的 encoder 分别耗时1.7us和1.5us，而 decoder 分别46us和3.8us，说明 decoder 上 MQA 比 MHA 快很多。另外在效果上 MQA 的 PPL (越小越好)有所上升，BLEU(越大越好)有所下降，换句话说就是效果有所下降。<br>
 
-[MQA 论文](https://arxiv.org/abs/1911.02150)
+- [MQA 论文](https://arxiv.org/abs/1911.02150)
 
 # 2 大模型神器：GQA（Grouped Query Attention）
 ## 2.1 GQA Structure
@@ -60,10 +60,10 @@ $$\mathbf{S}=\mathbf{Q K}^{\top} \in \mathbb{R}^{N \times N}, \quad \mathbf{P}=s
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这个问题在应用于注意力矩阵的其他逐元素操作时会变得更加严重，例如应用于 S 的掩码操作或应用于 P 的dropout操作。因此，已经有很多尝试将多个逐元素操作融合在一起，例如将掩码操作与softmax操作融合在一起[77]。<br>
 在第3.2节中，我们将展示标准的注意力实现在序列长度 N 方面进行 HBM 访问的二次方增长。我们还将比较标准注意力和我们的方法（FlashAttention）的FLOPs数量和HBM访问数量。<br>
 
-- **计算简图** <br>
+- 计算简图 <br>
 ![standard attention](images/standard_attention0.png)
 
-- **standard attention pseudo-code** <br>
+- standard attention pseudo-code <br>
 ![algorithm0](images/flash_attention1_algorithm0.jpg)
 
 ## 3.3 准备：切片的方式计算softmax
@@ -83,7 +83,7 @@ $$\ell(x)=\ell([x^{(1)}, x^{(2)}])=e^{m(x^{(1)})-m(x)} \ell(x^{(1)})+e^{m(x^{(2)
 
 $$softmax(x)=\frac{f(x)}{\ell(x)}.$$
 
-- **safe-softmax 图解** <br>
+- safe-softmax 图解 <br>
 ![safe-softmax](images/safe-softmax.png)
 
 ## 3.4 flash-attention-1 算法图解
@@ -116,13 +116,13 @@ $$softmax(x)=\frac{f(x)}{\ell(x)}.$$
 
 ## 3.6 FlashAttention1 Backward 伪代码
 
-- **普通Attention backwad** <br>
-![figure26](images/flash-attention1-algorithm3.png)
+- 普通Attention backwad <br>
+![figure26](images/flash_attention1-algorithm3.png)
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;从前向传递中保存伪随机数生成器获取状态并在反向过程中重新生成dropout mask.<br>
 
-- **FlashAttention1 Backward** <br>
-![figure26](images/flash-attention1-algorithm4.png)
+- FlashAttention1 Backward <br>
+![figure26](images/flash_attention1-algorithm4.png)
 
 ## 3.7 Flash-Attention 效果
 1. 内存开销： IO Complexity <br>
