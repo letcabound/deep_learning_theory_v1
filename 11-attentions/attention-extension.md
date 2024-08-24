@@ -240,7 +240,7 @@ $$\Theta(N^2d^2M^{-1})$$
 # 8 大模型推理加速利器：Page-Attention and vLLM
 - PagedAttention <br>
 [参考链接](https://blog.vllm.ai/2023/06/20/vllm.html) <br>
-[page attention 论文链接](https://arxiv.org/abs/2309.06180) <br>
+[page attention 论文链接](https://arxiv.org/pdf/2309.06180) <br>
 
 ## 8.1 vLLM 简介
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LLM承诺从根本上改变我们在所有行业中使用人工智能的方式。然而，实际为这些模型提供服务是具有挑战性的，即使在昂贵的硬件上，速度也可能令人惊讶地缓慢。今天，我们很高兴地介绍vLLM，这是一个用于快速LLM推理和服务的开源库。vLLM利用了我们的新注意力算法PagedAttention，有效地管理注意力key 和 value。配备PagedAttention的vLLM重新定义了LLM Server的最新技术水平：它的吞吐量比HuggingFace Transformers高出多达24倍，而无需进行任何模型架构更改。<br>
