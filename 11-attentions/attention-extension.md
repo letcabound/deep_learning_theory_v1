@@ -237,10 +237,51 @@ $$\Theta(N^2d^2M^{-1})$$
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;假设 K 和 V 能直接存在缓存中，模型规模小还好，一旦模型规模很大长度很长时，KV 根本就存不进缓存。<br>
 - [KV Cache 课件链接](https://github.com/Elvin-Ma/ai_papers/blob/main/attention_optimize/kv-cache.md)
 
-# 8 大模型推理加速利器：Page-Attention
+# 8 大模型推理加速利器：Page-Attention and vLLM
 - PagedAttention <br>
 [参考链接](https://blog.vllm.ai/2023/06/20/vllm.html) <br>
 [page attention 论文链接](https://arxiv.org/abs/2309.06180) <br>
+
+## 8.1 vLLM 简介
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LLM承诺从根本上改变我们在所有行业中使用人工智能的方式。然而，实际为这些模型提供服务是具有挑战性的，即使在昂贵的硬件上，速度也可能令人惊讶地缓慢。今天，我们很高兴地介绍vLLM，这是一个用于快速LLM推理和服务的开源库。vLLM利用了我们的新注意力算法PagedAttention，有效地管理注意力key 和 value。配备PagedAttention的vLLM重新定义了LLM Server的最新技术水平：它的吞吐量比HuggingFace Transformers高出多达24倍，而无需进行任何模型架构更改。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vLLM已经在加州大学伯克利分校开发，并在过去两个月部署在Chatbot Arena和Vicuna Demo。这是一项核心技术，即使对于像LMSYS这样具有有限计算资源的小型研究团队，也使LLM服务变得负担得起。在我们的GitHub存储库中，现在可以通过一条简单的命令尝试vLLM。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;我们将vLLM的吞吐量与HuggingFace Transformers（HF）这一最流行的LLM库以及HuggingFace文本生成推理（TGI），即先前的技术水平进行比较。我们在两种设置下进行评估：LLaMA-7B在NVIDIA A10G GPU上和LLaMA-13B在NVIDIA A100 GPU（40GB）上。我们从ShareGPT数据集中对请求的输入/输出长度进行抽样。在我们的实验中，相较于HF，vLLM的吞吐量最高提高了24倍，比TGI高出最多3.5倍。<br>
+
+![vllm performance](images/vllm-figure0.png)
+
+## 8.2 秘密武器：PagedAttention
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在vLLM中，我们确定LLM服务的性能受到**内存的限制**。在自回归解码过程中，LLM的所有输入token产生它们的注意力key 和 value Tensor，并且这些Tensor保留在GPU内存中以生成下一个token。这些cached key and value 通常被称为KV cache。KV cache具有以下特点：<br>
+
+- Large：在LLaMA-13B中，单个序列(sequence)占用高达1.7GB的空间。<br>
+- Dynamic：其大小取决于序列长度，而序列长度具有极大的变化和不可预测性。因此，有效地管理KV cache带来了重大挑战。我们发现，由于碎片化和过度保留，现有系统浪费了60%至80%的内存。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;为解决这一问题，我们引入了PagedAttention，这是一种受操作系统中虚拟内存和分页(virtual memory and paging)传统思想启发的注意力算法。与传统的注意力算法不同，PagedAttention允许在**非连续**的内存空间中存储连续的key和value。具体而言，PagedAttention将每个序列的KV cache划分为块，每个块包含一定数量的token的key 和value。在注意力计算过程中，PagedAttention内核能够高效地识别和获取这些块。<br>
+![page-attention0](images/page-attention0.gif)
+*PagedAttention: KV Cache are partitioned into blocks. Blocks do not need to be contiguous in memory space.* <br>
+
+## 8.3 优势1 : block 无需连续
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;由于这些块在内存中无需连续，我们可以像操作系统的虚拟内存一样以更加灵活的方式管理键和值：可以将块视为页面，标记视为字节，序列视为进程。序列的连续逻辑块通过块表映射到非连续的物理块。随着生成新标记，物理块会根据需要进行分配。<br>
+![page-attention1](images/page-attention1.gif)
+*Example generation process for a request with PagedAttention.* <br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在PagedAttention中，内存浪费仅发生在序列的最后一个块中。在实践中，这导致几乎最佳的内存利用率，仅浪费不到4%。这种内存效率的提升非常有益：它使系统能够更多地将序列进行批处理，提高GPU利用率，从而显著提高吞吐量，正如上述性能结果所示。<br>
+
+## 8.4 优势2 ：内存共享
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PagedAttention还有另一个关键优势：高效的内存共享。例如，在并行采样中，多个输出序列从相同的提示中生成。在这种情况下，提示(prompt)的计算和内存可以在输出序列之间共享使用。
+![page-attention1](images/page-attention2.gif)
+*Example of parallel sampling.* <br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PagedAttention通过其block-table自然地实现了内存共享。类似于进程共享物理页面，PagedAttention中的不同序列可以通过将它们的逻辑块映射到相同的物理块来共享块(processes share physical pages)。为了确保安全共享，PagedAttention跟踪物理块的引用计数并实现**写时复制机制**。<br>
+
+- 写时复制机制
+![page-attention1](images/page-attention3.gif)
+*Example generation process for a request that samples multiple outputs.* <br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PageAttention的内存共享大大减少了复杂采样算法（如并行采样和beam-search）的内存开销，将它们的内存使用量降低了高达55%。这可以将吞吐量提高高达2.2倍。这使得这些采样方法在LLM服务中变得实用。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PagedAttention是vLLM的核心技术，是我们的LLM推理和服务引擎背后的核心技术，支持各种高性能模型，并具有易于使用的接口。<br>
 
 # 9 参考链接
 - [参考链接](https://towardsdatascience.com/attn-illustrated-attention-5ec4ad276ee3)
