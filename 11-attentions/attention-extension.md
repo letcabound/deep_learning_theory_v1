@@ -236,6 +236,24 @@ $$\Theta(N^2d^2M^{-1})$$
 # 7 从ring-attention 到 context parallel
 - [context_parallel](https://github.com/NVIDIA/Megatron-LM/blob/c3677e09aa4e2eec37048307bd795928b8f8324a/docs/source/api-guide/context_parallel.rst)
 
+![TP2CP2](https://docscontent.nvidia.com/dims4/default/6e91b58/2147483647/strip/true/crop/3101x1384+0+0/resize/1440x643!/format/webp/quality/90/?url=https%3A%2F%2Fk3-prod-nvidia-docs.s3.us-west-2.amazonaws.com%2Fbrightspot%2Fsphinx%2F0000018e-4e90-d04c-a7fe-7fda98950000%2Fmegatron-core%2Fdeveloper-guide%2Flatest%2F_images%2FCP_overview.png)
+
+*Figure : 一个使用 TP2CP2 运行的 Transformer 层。Attention 旁边的通信是为了 CP，其它的是为了 TP。（AG/RS：前向传播中的 all-gather 和反向传播中的 reduce-scatter，RS/AG：前向传播中的 reduce-scatter 和反向传播中的 all-gather，/AG：前向传播中的空操作和反向传播中的 all-gather）。* <br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;上下文并行（“CP”）是一种在**序列长度维度**上的并行化方案。与之前的 SP（序列并行）不同，SP仅拆分Dropout和LayerNorm激活的序列，CP沿着序列维度分割网络输入和所有激活。通过CP，除了注意力之外的所有模块（例如，Linear，LayerNorm等）都可以像往常一样工作，无需进行任何更改，因为它们没有跨token的操作。至于注意力，每个标记的查询（Q）需要与同一序列中所有标记的键值（KV）进行计算。因此，CP需要跨GPU进行额外的allgather以收集完整的KV序列。相应地，在反向传播中应用reduce-scatter到KV的激活梯度。为了减少激活内存占用，每个GPU在前向过程中仅存储一个序列块的KV，并在反向过程中再次收集KV。KV通信发生在一个GPU和其他TP组中的对等GPU之间。全收集和reduce-scatter在底层转换为环拓扑中的点对点通信。交换KV还可以利用MQA/GQA来减少通信量，因为它们仅对KV使用一个或少量注意力头。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;例如，在图1中，假设序列长度为8K，每个GPU处理4K个标记(此处有歧义)。GPU0和GPU2组成一个CP组，它们彼此交换KV。同样的情况也发生在GPU1和GPU3之间。CP类似于环注意力，但通过（1）利用最新的OSS和cuDNN快闪注意力内核；（2）消除由低三角形因果蒙版导致的不必要计算，并在GPU之间实现最佳负载平衡，提供更好的性能。<br>
+
+![CP performance](https://docscontent.nvidia.com/dims4/default/054278e/2147483647/strip/true/crop/2685x1251+0+0/resize/1440x671!/format/webp/quality/90/?url=https%3A%2F%2Fk3-prod-nvidia-docs.s3.us-west-2.amazonaws.com%2Fbrightspot%2Fsphinx%2F0000018e-4e90-d04c-a7fe-7fda98950000%2Fmegatron-core%2Fdeveloper-guide%2Flatest%2F_images%2FCP_results.png)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LLM在处理长上下文（即，长序列长度）时遇到了内存不足（OOM）问题，因为激活的内存占用呈线性增长。在反向计算中重新计算激活可以避免OOM，但也会引入显著的开销（完全重新计算时约为30%）。扩大张量模型并行性（TP）也可以解决OOM问题，但**这可能会使计算（例如，Linear）过短，无法重叠通信延迟**。明确地说，无论是否发生OOM，扩展到更多GPU并增加TP都可能会遇到重叠问题。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CP可以更好地解决这些问题。使用CP，每个GPU仅对序列的一部分进行计算，这通过CP倍减少了计算和通信。因此，不用担心它们之间的重叠。每个GPU的激活内存占用也小了CP倍，因此不再有OOM问题。正如图2所示，TP和CP的组合可以**通过消除重新计算开销，并在计算和通信之间取得最佳折衷来实现最佳性能**。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在GPT中已经添加了CP支持。所有共享GPT代码路径的模型也应该能够受益于CP，比如Llama。CP可以与TP（张量模型并行）、PP（管道模型并行）和DP（数据并行）一起工作，其中GPU的总数等于TPxCPxPPxDP。CP还可以与不同的注意力变体一起工作，包括MHA/MQA/GQA，单向和双向掩蔽。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通过简单地在命令行中设置context_parallel_size=<CP_SIZE> 来启用CP。默认的context_parallel_size为1，这意味着CP被禁用。运行CP需要Megatron-Core（>=0.5.0）和Transformer Engine（>=1.1）。
+
 # 7 大模型推理加速利器：KV Cache
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;假设 K 和 V 能直接存在缓存中，模型规模小还好，一旦模型规模很大长度很长时，KV 根本就存不进缓存。<br>
 - [KV Cache 课件链接](https://github.com/Elvin-Ma/ai_papers/blob/main/attention_optimize/kv-cache.md)
