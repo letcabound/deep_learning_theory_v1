@@ -238,6 +238,17 @@ $$\Theta(N^2d^2M^{-1})$$
 
 ![TP2CP2](https://docscontent.nvidia.com/dims4/default/6e91b58/2147483647/strip/true/crop/3101x1384+0+0/resize/1440x643!/format/webp/quality/90/?url=https%3A%2F%2Fk3-prod-nvidia-docs.s3.us-west-2.amazonaws.com%2Fbrightspot%2Fsphinx%2F0000018e-4e90-d04c-a7fe-7fda98950000%2Fmegatron-core%2Fdeveloper-guide%2Flatest%2F_images%2FCP_overview.png)
 
+```python
+#                (16, 32, 768)                       (16, 64, 384)                       (16, 32, 768)                 (16, 64, 384)        (16, 32, 768)
+#                          AG/RS --> (16, 64, 768) -->          --> (16, 64, 768) --> RS/AG        --> AG/RS (16, 64, 768)      -->  (16, 64, 768) --> RS
+#                (16, 32, 768)                       (16, 64, 384)                       (16, 32, 768)                 (16, 64, 384)        (16, 32, 768)
+# (16, 128, 768) -->
+#                (16, 32, 768)                       (16, 64, 384)                       (16, 32, 768)                 (16, 64, 384)       (16, 32, 768)
+#                          AG/RS --> (16, 64, 768) -->         --> (16, 64, 768) --> RS/AG       --> AG/RS (16, 64, 768)      --> (16, 64, 768) --> RS
+#                (16, 32, 768)                       (16, 64, 384)                       (16, 32, 768)                 (16, 64, 384)       (16, 32, 768)
+#
+```
+
 *Figure : 一个使用 TP2CP2 运行的 Transformer 层。Attention 旁边的通信是为了 CP，其它的是为了 TP。（AG/RS：前向传播中的 all-gather 和反向传播中的 reduce-scatter，RS/AG：前向传播中的 reduce-scatter 和反向传播中的 all-gather，/AG：前向传播中的空操作和反向传播中的 all-gather）。* <br>
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;上下文并行（“CP”）是一种在**序列长度维度**上的并行化方案。与之前的 SP（序列并行）不同，SP仅拆分Dropout和LayerNorm激活的序列，CP沿着序列维度分割网络输入和所有激活。通过CP，除了注意力之外的所有模块（例如，Linear，LayerNorm等）都可以像往常一样工作，无需进行任何更改，因为它们没有跨token的操作。至于注意力，每个标记的查询（Q）需要与同一序列中所有标记的键值（KV）进行计算。因此，CP需要跨GPU进行额外的allgather以收集完整的KV序列。相应地，在反向传播中应用reduce-scatter到KV的激活梯度。为了减少激活内存占用，每个GPU在前向过程中仅存储一个序列块的KV，并在反向过程中再次收集KV。KV通信发生在一个GPU和其他TP组中的对等GPU之间。全收集和reduce-scatter在底层转换为环拓扑中的点对点通信。交换KV还可以利用MQA/GQA来减少通信量，因为它们仅对KV使用一个或少量注意力头。<br>
