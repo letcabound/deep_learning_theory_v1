@@ -38,6 +38,16 @@
 
 ![figure3](images/figure3.png)
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GPipe 实现了随着设备数量的增加几乎**线性**的吞吐量提升，尽管**如果模型参数在工作器之间分布不均匀，则不能始终保证这一点**。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PipeDream（[Narayanan 等，2019](https://cs.stanford.edu/~matei/papers/2019/sosp_pipedream.pdf)）安排每个woker交替处理前向传递和后向传递（1F1B）。PipeDream 将每个模型partition命名为“stage”，每个stage的woker可以有多个副本来运行数据并行性。在这个过程中，PipeDream 使用确定性的轮询负载平衡策略将work分配给多个stage的副本，以确保同一minibatch的前向和后向传递在同一个副本上进行。<br>
+
+![figure4](images/figure4.png)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;由于 PipeDream 没有跨所有woker进行的batch结束allreduce gradient同步，1F1B 的本地实现很容易导致一个microbatch的**前向和后向传递使用不同版本的模型权重**，从而降低学习效率。PipeDream 提出了一些设计来解决这个问题：<br>
+
+- 权重存储：每个woker跟踪几个模型版本，并确保在给定数据批次中前向和后向传递中使用相同版本的权重。
+- 垂直同步（可选）：模型权重的版本与激活和梯度一起在阶段工作器之间流动。然后计算采用从前一个工作器传播的相应存储版本。该过程保持了work之间的版本一致性。请注意，这是异步的，与 GPipe 不同。
 
 
 
