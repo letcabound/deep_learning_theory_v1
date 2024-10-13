@@ -83,6 +83,7 @@
 ![figure9](images/figure9.png)
 
 # 6 专家混合（Mixture-of-Experts，MoE）
+## 6.1 原始的MOE
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;最近，专家混合（MoE）方法引起了许多关注，因为研究人员（主要来自谷歌）尝试推动模型规模的极限。这一思想的核心是[集成学习](https://en.wikipedia.org/wiki/Ensemble_learning) : Combination of multiple weak learners gives you a strong learner! <br>
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在一个深度神经网络内部，集成可以通过连接多个专家的门控机制来实现（[Shazeer 等人，2017年](https://arxiv.org/abs/1701.06538)）。**门控机制控制着网络的哪个子集（例如，哪些专家）应该被激活以产生输出**。该论文将其命名为“稀疏门控专家混合”（MoE）层。<br>
@@ -98,6 +99,29 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一个简单的选择是用一个可训练的权重矩阵 $G_{g}$ 乘以输入，然后进行 softmax 运算: $G_{\sigma}(x)=softmax(x W_{g})$ 。然而，这会产生一个密集的控制向量用于门控，并且不利于节省计算资源，因为我们只在 $G^{(i)}(x)=0$ 时需要评估一个专家。因此，MoE 层只保留前 k 个值。它还向 G **添加可调整的高斯噪声以改善负载平衡**。这种机制称为**带噪声的 top- k 门控**。<br>
 
 ![formula4](images/formula4.png)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在这里，上标 $v^{(i)}$ 表示向量 v 的第 i 个维度。函数 topk (., k) 通过将其他维度设置为 -\infty ，选择具有最高值的前 k 个维度。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;为了避免门控网络**可能始终偏好少数强专家的自我强化效应**，[Shazeer 等人（2017年）](https://arxiv.org/abs/1701.06538)通过额外的**重要性损失提出了软约束**，以鼓励所有专家具有相同的权重。这相当于每个专家的批次平均值的变异系数的平方。<br>
+
+![formula5](images/formula5.png)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;其中CV 是变异系数，损失权重 $w_{aux}$ 是一个需要调整的超参数。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;由于每个专家网络只获得训练样本的一部分（“缩减的批次问题”），我们应该尽量在 MoE 中使用**尽可能大的批次大小**。然而，这受限于 GPU 内存。数据并行性和模型并行性可以应用以提高吞吐量。<br>
+
+![figure11](images/figure11.png)
+
+## 6.2 GShard
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GShard（[Lepikhin 等，2020](https://arxiv.org/abs/2006.16668)）通过分片将 MoE transformer 模型扩展到 6000 亿个参数(600B)。MoE transformer 用 MoE 层替换每个其他前馈层。分片的 MoE transformer **只在多台机器上分片了 MoE 层，而其他层则简单地复制**。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在 GShard 中有几种改进的设计用于门控函数：<br>
+- 专家容量：通过一个专家的token数量不应超过一个阈值，称为“专家容量(capacity)”。如果一个token被路由到已达到其capacity的专家，该token将被标记为“溢出(overflowed)”，并且门控输出将被更改为**零向量**。<br>
+- 本地组调度：token被均匀地分成多个本地组，并在组级别强制执行专家容量。<br>
+- 辅助损失：其动机类似于原始的 MoE 辅助损失。他们添加了一个辅助损失，以最小化每个专家路由的数据分数的均方。<br>
+- 随机路由：第二优秀的专家以其权重成比例的概率被选择；否则，GShard 遵循随机路由，以增加一些随机性。<br>
+
+
 
 
 # 参考文档
