@@ -123,14 +123,22 @@
 
 ![figure12](images/figure12.png)
 
-## 6.3 Swithch Transformer
+## 6.3 Switch Transformer
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Switch Transformer（[Fedus 等人，2021年](https://arxiv.org/abs/2101.03961)）通过将密集的前馈层替换为稀疏的 Switch FFN 层，将模型规模扩展到数万亿个参数！在这种结构中，**每个输入仅路由到一个专家网络**。用于负载平衡的辅助损失如下所示: $loss_{aux} = w_{aux} {\sum_{i}^{n}f_{i}p_{i}}$ , 给定n个专家，其中 $f_{i}$ 是路由到第i个专家的token的比例， $p_{i}$ 是由门控网络预测的i专家的路由概率。<br>
 
 ![figure13](images/figure13.png)
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;为了提高训练稳定性，Switch Transformer 结合了以下设计：<br>
 
+- 选择性精度。他们表明，仅将模型的局部部分选择性地转换为 FP32 精度可以提高稳定性，同时避免了FP32张量的昂贵通信成本。**FP32 精度仅在路由器函数体内使用**，并将结果重新转换为 FP16。
+- 较小的初始化。权重矩阵的初始化是从均值为μ=0, 标准差为 $σ=\sqrt{\frac{s}{n}}$ 的截断正态分布中进行采样。他们还建议将 transformer 初始化尺度参数从s=1减小到s=0.1。<br>
+- 使用更高的专家丢弃率(dropout rate)。微调通常在小数据集上进行。为了避免过拟合，每个专家内的丢弃率增加了相当大的量。有趣的是，他们发现增加所有层的丢弃率会导致性能下降。在论文中，他们在非专家层使用了 0.1 的丢弃率，但在专家 FF 层内使用了 0.4。<br>
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Switch Transformer 论文总结了用于训练大型模型的不同数据和模型并行策略，并通过一个精美的插图进行了说明：<br>
 
+![figure14](images/figure14.png)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;无论是 GShard 的 top-2 还是 Switch Transformer 的 top-1 都取决于token选择，其中每个token选择最佳的一个或两个专家进行路由。它们都采用了一个辅助损失来鼓励更平衡的负载分配，但这并不能保证最佳性能。此外，专家容量限制(capacity limitation)可能会导致token浪费，因为如果一个专家达到其容量限制，这些token将被丢弃。<br>
 
 
 
