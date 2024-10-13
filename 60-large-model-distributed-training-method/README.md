@@ -140,8 +140,8 @@
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;无论是 GShard 的 top-2 还是 Switch Transformer 的 top-1 都取决于token选择，其中每个token选择最佳的一个或两个专家进行路由。它们都采用了一个辅助损失来鼓励更平衡的负载分配，但这并不能保证最佳性能。此外，专家容量限制(capacity limitation)可能会导致token浪费，因为如果一个专家达到其容量限制，这些token将被丢弃。<br>
 
-## 6.4 Export Choice（EC）([Zhou 等人，2022年](https://arxiv.org/abs/2202.09368))路由**
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;EC允许每个专家选择前k个token。这样，每个专家自然地保证了**固定的容量**，每个token可以路由到多个专家。EC 可以实现完美的负载平衡，并且据显示可以将训练收敛速度提高 2 倍。<br>
+## 6.4 Export Choice（EC）([Zhou 等人，2022年](https://arxiv.org/abs/2202.09368))
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;EC路由允许每个专家选择前k个token。这样，每个专家自然地保证了**固定的容量**，每个token可以路由到多个专家。EC 可以实现完美的负载平衡，并且据显示可以将训练收敛速度提高 2 倍。<br>
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;给定专家数为e和输入矩阵 $X_{nxd}$，token与专家的亲和分数通过以下方式计算：<br>
 
