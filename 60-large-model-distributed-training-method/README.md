@@ -121,6 +121,16 @@
 - 辅助损失：其动机类似于原始的 MoE 辅助损失。他们添加了一个辅助损失，以最小化每个专家路由的数据分数的均方。<br>
 - 随机路由：第二优秀的专家以其权重成比例的概率被选择；否则，GShard 遵循随机路由，以增加一些随机性。<br>
 
+![figure12](images/figure12.png)
+
+## 6.3 Swithch Transformer
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Switch Transformer（[Fedus 等人，2021年](https://arxiv.org/abs/2101.03961)）通过将密集的前馈层替换为稀疏的 Switch FFN 层，将模型规模扩展到数万亿个参数！在这种结构中，**每个输入仅路由到一个专家网络**。用于负载平衡的辅助损失如下所示: $loss_{aux} = w_{aux} {\sum_{i}^{n}f_{i}p_{i}}$ , 给定n个专家，其中 $f_{i}$ 是路由到第i个专家的token的比例， $p_{i}$ 是由门控网络预测的i专家的路由概率。<br>
+
+![figure13](images/figure13.png)
+
+
+
+
 
 
 
