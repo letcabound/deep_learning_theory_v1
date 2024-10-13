@@ -140,8 +140,31 @@
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;无论是 GShard 的 top-2 还是 Switch Transformer 的 top-1 都取决于token选择，其中每个token选择最佳的一个或两个专家进行路由。它们都采用了一个辅助损失来鼓励更平衡的负载分配，但这并不能保证最佳性能。此外，专家容量限制(capacity limitation)可能会导致token浪费，因为如果一个专家达到其容量限制，这些token将被丢弃。<br>
 
+## 6.4 Export Choice（EC）([Zhou 等人，2022年](https://arxiv.org/abs/2202.09368))路由**
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;EC允许每个专家选择前k个token。这样，每个专家自然地保证了**固定的容量**，每个token可以路由到多个专家。EC 可以实现完美的负载平衡，并且据显示可以将训练收敛速度提高 2 倍。<br>
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;给定专家数为e和输入矩阵 $X_{nxd}$，token与专家的亲和分数通过以下方式计算：<br>
+
+![formula6](images/formula6.png)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一个token到专家的分配由三个矩阵表示，分别为 $I_{exk}, G_{exk}$ 和 $P_{exkxn}$ 。 $I_{i,j}$ 标注了第
+i个专家的第j个选择是哪个token。门控矩阵G存储了所选token的路由权重。P是I的 one-hot 版本，用于生成门控 FFN 层的输入矩阵PX。<br>
+
+![formula7](images/formula7.png)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Export Choice 路由探索的一种正则化方法是限制每个令牌的最大专家数。<br>
+
+![formula8](images/formula8.png)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;其中矩阵 $A_{e,n}$中的每个条目 $A[i,j]$表示第i个专家是否选择第j个令牌。解决这个问题并不是一件简单的事情。该论文使用了 Dykstra 算法，该算法运行一系列多次迭代的计算步骤。在实验中，限制专家选择会导致微调性能略微降低。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;参数k由 k=nc/e确定，其中n是一个批次中token的总数，c是表示一个token平均使用的专家数量的容量因子。大多数实验中使用2，但带有c=1的 EC 仍然优于最佳token选择门控。有趣的是c=0.5仅对训练性能造成轻微损害。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Export Choice（EC）的一个重大缺点是，当批量大小过小时，它无法工作，对于自回归文本生成也是如此，因为它需要知道未来的token才能进行top-k选择。<br>
 
 # 参考文档
 - [How to train really large models on many gpus](https://lilianweng.github.io/posts/2021-09-25-train-large/)
 - [How to train really large models on many gpus](https://openai.com/index/techniques-for-training-large-neural-networks/)
+- [huggingface-moe](https://huggingface.co/blog/moe)
+
+
