@@ -40,15 +40,64 @@
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GPipe 实现了随着设备数量的增加几乎**线性**的吞吐量提升，尽管**如果模型参数在工作器之间分布不均匀，则不能始终保证这一点**。<br>
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PipeDream（[Narayanan 等，2019](https://cs.stanford.edu/~matei/papers/2019/sosp_pipedream.pdf)）安排每个woker交替处理前向传递和后向传递（1F1B）。PipeDream 将每个模型partition命名为“stage”，每个stage的woker可以有多个副本来运行数据并行性。在这个过程中，PipeDream 使用确定性的轮询负载平衡策略将work分配给多个stage的副本，以确保同一minibatch的前向和后向传递在同一个副本上进行。<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PipeDream（[Narayanan 等，2019](https://cs.stanford.edu/~matei/papers/2019/sosp_pipedream.pdf)）安排每个woker交替处理前向传递和后向传递（1F1B）。PipeDream 将每个模型partition命名为“stage”，每个stage的woker可以有多个副本(replica)来运行数据并行性。在这个过程中，PipeDream 使用确定性的轮询负载平衡策略将work分配给多个stage的副本，以确保同一minibatch的前向和后向传递在同一个副本上进行。<br>
 
 ![figure4](images/figure4.png)
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;由于 PipeDream 没有跨所有woker进行的batch结束allreduce gradient同步，1F1B 的本地实现很容易导致一个microbatch的**前向和后向传递使用不同版本的模型权重**，从而降低学习效率。PipeDream 提出了一些设计来解决这个问题：<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;由于 PipeDream 没有跨所有woker进行的end-of-batch allreduce gradient synchronization，1F1B 的本地实现很容易导致一个microbatch的**前向和后向传递使用不同版本的模型权重**，从而**降低学习效率**。PipeDream 提出了一些设计来解决这个问题：<br>
 
 - 权重存储：每个woker跟踪几个模型版本，并确保在给定数据批次中前向和后向传递中使用相同版本的权重。
 - 垂直同步（可选）：模型权重的版本与激活和梯度一起在阶段工作器之间流动。然后计算采用从前一个工作器传播的相应存储版本。该过程保持了work之间的版本一致性。请注意，这是异步的，与 GPipe 不同。
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在训练运行的开始阶段，PipeDream 首先对模型中每个层的计算内存成本和时间进行分析，然后优化将层分割为stage的解决方案，这是一个动态规划问题。<br>
+
+![figure5](images/figure5.png)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PipeDream 有两个主要变体，通过存储的模型版本来减少内存占用（Narayanan 等人，2021年）。
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**PipeDream-flush** 定期增加全局同步的pipeline-flush，就像 GPipe 一样。通过这种方式，它通过**牺牲一点吞吐量**大大减少了内存占用（即只保留一个模型权重版本）。<br>
+
+![figure6](images/figure6.png)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**PipeDream-2BW** 仅保留**两个模型权重版本**，其中“2BW”代表“双缓冲权重”。它在每个micro-batch生成一个新的模型版本，应该比管道深度大。由于一些剩余的反向传播仍依赖于旧版本，新更新的模型版本无法立即完全替换旧版本。总共只需要保存两个版本，因此**内存成本大大降低**。<br>
+
+![figure7](images/figure7.png)
+
+# 5 张量并行性
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;模型并行(MP)和管道并行(PP)将模型**纵向分割**。另一方面，我们可以**横向**将一个张量操作的计算在多个设备之间进行分区，称为张量并行（TP）。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;以 transformer 为例，考虑到其流行度。transformer 模型主要由 MLP 层和自注意块组成。Megatron-LM（Shoeybi 等人，2020年）采用了一种简单的方式来并行处理 MLP 和自注意力内层计算。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;transformer 中的 MLP 层包含一个 GEMM（General matrix multiply）后跟一个非线性 GeLU 转换。让我们按列拆分权重矩阵A：<br>
+
+![formula2](images/formula2.png)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;注意力块根据上述分区并行运行带有查询（query）、键（key）和值（value）权重的 GEMM，然后将它们与另一个 GEMM 结合以生成注意力头结果。<br>
+
+![formula3](images/formula3.png)
+
+![figure8](images/figure8.png)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Narayanan 等人（2021）](https://arxiv.org/abs/2104.04473)结合了管道、张量和数据并行性，并采用了一种新的管道调度策略(interleave-1f1b)，将其方法命名为 PTD-P。与仅将一系列连续的层（“模型块”）定位在一个设备上不同，每个worker可以被分配**多个小连续层子集的块**（例如，设备 1 拥有层 1、2、9、10；设备 2 拥有层 3、4、11、12；每个设备有两个模型块）。一个批次中的microbatch数量应该被worker的数量整除。如果每个工作器有v个模型块，与 GPipe 调度相比，管道**气泡时间可以减少v倍**。<br>
+
+![figure9](images/figure9.png)
+
+# 6 专家混合（Mixture-of-Experts，MoE）
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;最近，专家混合（MoE）方法引起了许多关注，因为研究人员（主要来自谷歌）尝试推动模型规模的极限。这一思想的核心是[集成学习](https://en.wikipedia.org/wiki/Ensemble_learning) : Combination of multiple weak learners gives you a strong learner! <br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在一个深度神经网络内部，集成可以通过连接多个专家的门控机制来实现（[Shazeer 等人，2017年](https://arxiv.org/abs/1701.06538)）。**门控机制控制着网络的哪个子集（例如，哪些专家）应该被激活以产生输出**。该论文将其命名为“稀疏门控专家混合”（MoE）层。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;精确地说，一个 MoE 层包含：
+- n个作为专家的前馈网络 $E_{i}$ ;
+- 一个可训练的门控网络G 来学习n个专家上的概率分布，以便将流量路由到几个选定的专家。
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;根据门控输出，不必评估每个专家。当专家数量过多时，我们可以考虑使用两级分层 MoE。<br>
+
+![figure10](images/figure10.png)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一个简单的选择是用一个可训练的权重矩阵 $G_{g}$ 乘以输入，然后进行 softmax 运算: $G_{\sigma}(x)=\operatorname{softmax}(x W_{g})$ 。然而，这会产生一个密集的控制向量用于门控，并且不利于节省计算资源，因为我们只在 $G^{(i)}(x)=0$ 时需要评估一个专家。因此，MoE 层只保留前 k 个值。它还向 G **添加可调整的高斯噪声以改善负载平衡**。这种机制称为**带噪声的 top- k 门控**。<br>
+
+![formula4](images/formula4.png)
 
 
 # 参考文档
