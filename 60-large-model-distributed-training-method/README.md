@@ -95,7 +95,7 @@
 
 ![figure10](images/figure10.png)
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一个简单的选择是用一个可训练的权重矩阵 $G_{g}$ 乘以输入，然后进行 softmax 运算: $G_{\sigma}(x)=\operatorname{softmax}(x W_{g})$ 。然而，这会产生一个密集的控制向量用于门控，并且不利于节省计算资源，因为我们只在 $G^{(i)}(x)=0$ 时需要评估一个专家。因此，MoE 层只保留前 k 个值。它还向 G **添加可调整的高斯噪声以改善负载平衡**。这种机制称为**带噪声的 top- k 门控**。<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一个简单的选择是用一个可训练的权重矩阵 $G_{g}$ 乘以输入，然后进行 softmax 运算: $G_{\sigma}(x)=softmax(x W_{g})$ 。然而，这会产生一个密集的控制向量用于门控，并且不利于节省计算资源，因为我们只在 $G^{(i)}(x)=0$ 时需要评估一个专家。因此，MoE 层只保留前 k 个值。它还向 G **添加可调整的高斯噪声以改善负载平衡**。这种机制称为**带噪声的 top- k 门控**。<br>
 
 ![formula4](images/formula4.png)
 
