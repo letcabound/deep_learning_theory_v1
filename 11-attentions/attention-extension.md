@@ -42,17 +42,25 @@
 [GQA 论文](https://arxiv.org/pdf/2305.13245.pdf) <br>
 
 # 3 MLA(Multi-Head Latent Attention): Boosting Inference Efficiency
-- [论文链接](https://arxiv.org/pdf/2405.04434)
+- [DeepSeek-v2 论文链接](https://arxiv.org/pdf/2405.04434)
 
-## 3.1 Multi-Head Latent Attention: Boosting Inference Efficiency
+## 3.1 MLA 原理
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DeepSeek-v2 设计了MLA : 利用低秩KV联合压缩来消除推理时KVCache的瓶颈，从而支持高效的推理。传统的Transformer模型通常采用多头注意力机制(MHA)(Vaswani等人，2017)，但在生成过程中，其庞大的关键值(KV)缓存将成为限制推理效率的瓶颈。为了**减少KV缓存**，提出了多查询注意力机制(MQA)(Shazeer,2019)和分组查询注意力机制(GQA)(Ainslie等人，2023)。它们需要更小的KV缓存，但其性能无法与MHA相媲美(我们在附录D.1中提供了对MHA、GQA和MQA的消融分析)。<br>
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DeepSeek-V2设计了一种创新的注意力机制，称为多维潜隐注意力（MLA）。通过结合低秩键值联合压缩，MLA的性能优于MHA，但所需的KV缓存显著减少. <br>
 
-## 3.2 Low-Rank Key-Value Joint Compression
+![MLA](images/mla1.png)
 
+## 3.2 MLA 实现逻辑
+**KV 压缩** <br>
+![MLA](images/mla2.png)
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;其中, $c^{KV}_{t} ∈ R^{d_{c}}$ 是键（Key）和值（Value）的压缩潜在向量; $dc<<d_{h}n_{h}$ 表示KV压缩维度; $W_{DKV} ∈ R^{d_{c×d}}$ 是下投影矩阵；而 $W_{UK}, W_{UV} ∈ R^{d_{h}n_{h}×d_{c}} 分别是K和V的上投影矩阵。在推理过程中，MLA仅需缓存 $c_{KV}_{t}$ ，因此其键值缓存仅有 $d_{c} * l$ 个元素，其中l表示层数。<br>
 
+&nbsp;&nbsp;&nbsp;&nbsp;此外，为了减少训练过程中的激活内存，即使无法减少键值缓存，我们也对查询执行低秩压缩:<br>
+
+**Q 压缩** <br>
+![MLA](images/mla3.png)
 
 # 4 大模型加速利器：FlashAttention: 
 
