@@ -55,9 +55,9 @@
 **KV 压缩** <br>
 ![MLA](images/mla2.png)
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;其中, $c^{KV}_{t} ∈ R^{d_{c}}$ 是键（Key）和值（Value）的压缩潜在向量; $dc<<d_{h}n_{h}$ 表示KV压缩维度; $W_{DKV} ∈ R^{d_{c×d}}$ 是下投影矩阵；而 $W_{UK}, W_{UV} ∈ R^{d_{h}n_{h}×d_{c}} 分别是K和V的上投影矩阵。在推理过程中，MLA仅需缓存 $c_{KV}_{t}$ ，因此其键值缓存仅有 $d_{c} * l$ 个元素，其中l表示层数。<br>
+其中, $c_{t}^{KV} ∈ R^{d_{c}}$ 是键（Key）和值（Value）的压缩潜在向量; $d_{c} \ll d_{h}n_{h}$ 表示KV压缩维度; $W_{DKV} ∈ R^{d_{c×d}}$ 是下投影矩阵；而 $W_{UK}, W_{UV} ∈ R^{d_{h}n_{h}×d_{c}}$ 分别是K和V的上投影矩阵。在推理过程中，MLA仅需缓存 $c_{t}^{KV}$ ,因此其键值缓存仅有 $d_{c} * l$ 个元素，其中l表示层数。<br>
 
-&nbsp;&nbsp;&nbsp;&nbsp;此外，为了减少训练过程中的激活内存，即使无法减少键值缓存，我们也对查询执行低秩压缩:<br>
+此外，为了减少训练过程中的激活内存，即使无法减少键值缓存，我们也对查询执行低秩压缩:<br>
 
 **Q 压缩** <br>
 ![MLA](images/mla3.png)
