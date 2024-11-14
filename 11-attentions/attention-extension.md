@@ -267,16 +267,35 @@ $$\Theta(N^2d^2M^{-1})$$
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通过简单地在命令行中设置context_parallel_size=<CP_SIZE> 来启用CP。默认的context_parallel_size为1，这意味着CP被禁用。运行CP需要Megatron-Core（>=0.5.0）和Transformer Engine（>=1.1）。
 
-# 7 大模型推理加速利器：KV Cache
+# 7 从context parallel 到 chunked pipeline parallelism
+- [MoonCake](https://arxiv.org/pdf/2407.00079)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;分块管道并行（Chunked Pipeline Parallelism，CPP）机制来扩展单个请求的处理能力，跨多个节点进行处理，这对于减少长上下文输入的总体处理时间（TTFT）是必要的。与传统的序列并行（Sequence Parallelism，SP）解决方案相比，CPP 减少了网络消耗并简化了对频繁弹性扩展的依赖。该机制还通过层次预填充（layer-wise prefill）进行了补充，使得 KV 缓存的流式传输可以重叠延迟，从而进一步提高了系统的性能和效率。CPP 机制使得系统可以更好地处理长上下文输入，并且可以更有效地利用多个节点的处理能力，从而提高系统的整体性能和吞吐量。
+
+*(注释:TTFT(time to first token) TBT(time between tokens))*
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;最近的大型语言模型的可用上下文长度正在迅速增加，从8k到128K，甚至1M。通常，对于这样长的上下文请求，输入标记可能比输出标记大10到100倍，因此优化TTFT至关重要。由于长上下文预填具有丰富的并行性，使用超过一个8x GPU节点并行处理它们是可取的。然而，跨多个节点扩展张量并行性（TP）需要每层两次昂贵的基于RDMA的全局归约操作，显著降低了预填节点的MFU。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;最近，许多研究提出了序列并行性（SP）。序列并行性将请求的输入序列在不同节点之间分区，以实现加速。这些序列并行性方法利用了注意力运算的结合特性，并在Ring Attention或Striped Attention的实现过程中每层至少需要一次跨节点通信。这大大减少了网络消耗并提高了MFU。
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;然而，SP仍然导致MFU比仅使用单节点TP时更差。理想的部署将预填节点组织成两组：一组仅使用TP，另一组使用SP。仅在必要时将请求分发到SP组，以满足TTFT SLO。这种进一步的分解会导致动态调整每个组中节点数量的问题，因为静态并行设置可能导致集群中利用率较低。最近的研究提出了弹性序列并行性，以动态扩展或缩减SP组。尽管这是可能的，但这会给我们的架构增加复杂性。例如，需要提前建立一个全局通信组，并在调整期间考虑缓存重用利用率和SLO要求违规等指标时使Conductor的设计复杂化。这使得在部署过程中需要频繁的即时可扩展性的情况下具有挑战性。此外，SP仍然需要频繁的跨节点通信，这降低了MFU并与网络资源竞争以在节点之间传输KVCache。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;为解决这个问题，Mooncake 利用 **decoder-only transformer 的自回归属性** ，并为长上下文prefill实现了分块管道并行性（CPP）。我们将预填集群中的每 X 个节点分组为一个流水线预填节点组。对于每个请求，其输入标记被分成小块，每块不超过预填块大小。同一请求的不同块可以由不同节点同时处理，从而实现并行处理并减少 TTFT。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CPP 提供了两个主要优点：<br>
+1. 类似于训练中的流水线并行性，它只在每个流水线阶段的边界需要跨节点通信，这可以很容易地与计算重叠。这导致更好的 MFU，并减少了与 KVCache 传输相关的网络资源争用。
+2. 它自然适用于短期和长期上下文，对于短期上下文预填没有明显的开销，并避免频繁动态调整节点分区。这基于流水线的加速方法已在训练系统中得到探讨，但据我们所知，这是在推理阶段的第一个应用，由于长上下文推理只是最近出现。
+
+# 8 大模型推理加速利器：KV Cache
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;假设 K 和 V 能直接存在缓存中，模型规模小还好，一旦模型规模很大长度很长时，KV 根本就存不进缓存。<br>
 - [KV Cache 课件链接](https://github.com/Elvin-Ma/ai_papers/blob/main/attention_optimize/kv-cache.md)
 
-# 8 大模型推理加速利器：Page-Attention and vLLM
+# 9 大模型推理加速利器：Page-Attention and vLLM
 - PagedAttention <br>
 [参考链接](https://blog.vllm.ai/2023/06/20/vllm.html) <br>
 [page attention 论文链接](https://arxiv.org/pdf/2309.06180) <br>
 
-## 8.1 vLLM 简介
+## 9.1 vLLM 简介
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LLM承诺从根本上改变我们在所有行业中使用人工智能的方式。然而，实际为这些模型提供服务是具有挑战性的，即使在昂贵的硬件上，速度也可能令人惊讶地缓慢。今天，我们很高兴地介绍vLLM，这是一个用于快速LLM推理和服务的开源库。vLLM利用了我们的新注意力算法PagedAttention，有效地管理注意力key 和 value。配备PagedAttention的vLLM重新定义了LLM Server的最新技术水平：它的吞吐量比HuggingFace Transformers高出多达24倍，而无需进行任何模型架构更改。<br>
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vLLM已经在加州大学伯克利分校开发，并在过去两个月部署在Chatbot Arena和Vicuna Demo。这是一项核心技术，即使对于像LMSYS这样具有有限计算资源的小型研究团队，也使LLM服务变得负担得起。在我们的GitHub存储库中，现在可以通过一条简单的命令尝试vLLM。<br>
@@ -285,7 +304,7 @@ $$\Theta(N^2d^2M^{-1})$$
 
 ![vllm performance](images/vllm-figure0.png)
 
-## 8.2 秘密武器：PagedAttention
+## 9.2 秘密武器：PagedAttention
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在vLLM中，我们确定LLM服务的性能受到**内存的限制**。在自回归解码过程中，LLM的所有输入token产生它们的注意力key 和 value Tensor，并且这些Tensor保留在GPU内存中以生成下一个token。这些cached key and value 通常被称为KV cache。KV cache具有以下特点：<br>
 
 - Large：在LLaMA-13B中，单个序列(sequence)占用高达1.7GB的空间。<br>
@@ -295,14 +314,14 @@ $$\Theta(N^2d^2M^{-1})$$
 ![page-attention0](images/page-attention0.gif)
 *PagedAttention: KV Cache are partitioned into blocks. Blocks do not need to be contiguous in memory space.* <br>
 
-## 8.3 优势1 : block 无需连续
+## 9.3 优势1 : block 无需连续
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;由于这些块在内存中无需连续，我们可以像操作系统的虚拟内存一样以更加灵活的方式管理键和值：可以将块视为页面，标记视为字节，序列视为进程。序列的连续逻辑块通过块表映射到非连续的物理块。随着生成新标记，物理块会根据需要进行分配。<br>
 ![page-attention1](images/page-attention1.gif)
 *Example generation process for a request with PagedAttention.* <br>
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在PagedAttention中，内存浪费仅发生在序列的最后一个块中。在实践中，这导致几乎最佳的内存利用率，仅浪费不到4%。这种内存效率的提升非常有益：它使系统能够更多地将序列进行批处理，提高GPU利用率，从而显著提高吞吐量，正如上述性能结果所示。<br>
 
-## 8.4 优势2 ：内存共享
+## 9.4 优势2 ：内存共享
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PagedAttention还有另一个关键优势：高效的内存共享。例如，在并行采样中，多个输出序列从相同的提示中生成。在这种情况下，提示(prompt)的计算和内存可以在输出序列之间共享使用。
 ![page-attention1](images/page-attention2.gif)
 *Example of parallel sampling.* <br>
@@ -317,9 +336,45 @@ $$\Theta(N^2d^2M^{-1})$$
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PagedAttention是vLLM的核心技术，是我们的LLM推理和服务引擎背后的核心技术，支持各种高性能模型，并具有易于使用的接口。<br>
 
-# 9 参考链接
+# 10 RedisAttention
+- [sgLang](https://arxiv.org/abs/2312.07104)
+
+## 10.1 当前KV Cache
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在开发 SGLang runtime期间，作者发现了一个关键的优化机会，可以提高复杂的大型语言模型（LLM）程序的性能，这些程序在当前系统中处理得很差：键值缓存（KV Cache）重用。KV Cache reuse意味着具有相同前缀的不同提示可以共享中间KV Cache，从而避免冗余的内存和计算。在涉及多个 LLM 调用的复杂程序中，可能存在各种KV Cache重用模式(如下图所示)。这些模式在 LLM 工作负载中很常见。虽然有些系统能够在某些场景中处理KV Cache Reuse，但这通常需要手动配置和特定的调整。此外，**即使通过手动配置，现有的系统也无法自动适应所有场景**，因为可能的重用模式非常多样。换句话说，当前系统无法有效地处理KV Cache Reuse，需要手动配置和调整，而 SGLang 运行时可以自动识别和利用这些重用模式，提高复杂 LLM 程序的性能。<br>
+
+![KV Cache Reuse](https://lmsys.org/images/blog/sglang/sharing_wide.jpg)
+
+键值缓存共享示例。蓝色框表示可共享的提示部分，绿色框表示不可共享的部分，黄色框表示不可共享的模型输出。可共享的部分包括:<br>
+- 少样本学习示例（few-shot learning examples）
+- 自一致性中的问题（questions in self-consistency）
+- 多轮对话中的聊天历史（chat history in multi-turn chat）
+- 思维树中的搜索历史（search history in tree-of-thought）
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;为了系统地利用这些重用机会，我们引入了 RadixAttention，一种用于在运行时自动重用键值缓存的新技术。与传统方法不同，我们的方法在完成生成请求后不会丢弃KV Cache，而是将其保留在基数树（radix tree）中，用于存储提示和生成结果的KV Cache。这种数据结构使得前缀搜索、插入和淘汰变得高效。我们实现了一个最近最少使用（Least Recently Used，LRU）淘汰策略，并结合了一个缓存感知调度策略，以提高缓存命中率。通过 RadixAttention，我们可以自动识别和利用键值缓存重用机会，从而减少冗余的计算和内存占用，提高系统的性能和效率。<br>
+
+## 10.2 RedisAttention strategy
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A Radix Tree 是一种数据结构，它作为一种空间高效的替代方案，取代了传统的 Trie（前缀树）。与典型的树不同，redix tree的边不仅可以用单个元素标记，还可以用不同长度的元素序列标记，从而显著提高了效率。在我们的系统中，我们使用redix tree来管理token序列与其对应的KV cache张量之间的映射关系。这些KV Cache张量存储在non-contiguous paged layout分页布局中，每个页面的大小等于一个token。由于 GPU 内存很快就会被KV Cache填满，我们引入了一个简单的 LRU（最近最少使用）淘汰(evict)策略，该策略首先淘汰最近最少使用的叶子节点。通过首先淘汰叶子节点，我们可以重用它们的共同祖先，直到这些祖先成为叶子节点并被淘汰。Radix tree的优势在于其能够高效地存储和检索大量的键值对，而 LRU 淘汰策略可以有效地管理缓存空间，减少内存占用。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在连续批处理(contiguous batching)设置中，我们不能淘汰当前正在运行的批处理中使用的节点。因此，每个节点维护一个引用计数器，指示有多少个正在运行的请求正在使用它。如果一个节点的引用计数器为零，则该节点可以被淘汰。注意，我们不预先分配一个固定大小的内存池作为缓存。相反，我们让缓存的token和当前正在运行的请求共享同一个memory pool。因此，系统动态地分配内存用于缓存和运行请求。当足够多的等待请求运行时，系统将淘汰所有缓存的token，以便更大的batch size。下图显示了如何为多个传入请求维护 radix tree。前端解释器将完整的提示发送到runtime，runtime 运行前缀匹配和重用。树结构存储在 CPU 上，维护开销可以忽略不计。前端首先发送前缀作为提示，确保前缀正确插入树中。然后发送剩余的提示。这种“前端提示”简化了运行时调度和匹配，体现了前端-运行时协同设计的好处。这种设计使得系统能够高效地利用内存，减少缓存的开销，并提高系统的性能和效率。<br>
+
+- [RadixAttention operations with an LRU eviction policy](https://lmsys.org/images/blog/sglang/radix_attn.jpg)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RadixAttention 操作示例，采用 LRU 淘汰策略，跨九个时间点进行演示。该图展示了基数树在响应各种请求时的动态演变。这些请求包括两个聊天会话、一个批量的少样本学习查询和一个自一致性采样。每个树边都带有一个标签，表示一个子字符串或令牌序列。节点根据其状态进行颜色编码：绿色表示新添加的节点，蓝色表示在当前时间点访问的缓存节点，红色表示已被淘汰的节点。<br>
+
+1. 在步骤（1）中，基数树最初为空;
+2. 在步骤（2）中，服务器处理一个传入的用户消息 "Hello" 并响应 LLM 输出 "Hi"。系统提示 "You are a helpful assistant"、用户消息 "Hello!" 和 LLM 回复 "Hi!" 被合并到树中作为一个单独的边，链接到一个新节点。
+3. 在步骤（3）中，一个新的提示到达，服务器在基数树中找到提示的前缀（即对话的第一轮）并重用其 KV 缓存。新的轮次被追加到树中作为一个新节点。
+4. 在步骤（4）中，一个新的聊天会话开始。来自（3）的节点 "b" 被拆分为两个节点，以允许两个聊天会话共享系统提示。
+5. 在步骤（5）中，第二个聊天会话继续。但是，由于内存限制，来自（4）的节点 "c" 必须被淘汰。新的轮次被追加到（4）中的节点 "d" 之后。
+6. 在步骤（6）中，服务器接收一个少样本学习查询，处理它，并将其插入树中。根节点被拆分，因为新查询与现有节点不共享任何前缀。
+7. 在步骤（7）中，服务器接收一批额外的少样本学习查询。这些查询共享相同的少样本示例，因此我们拆分来自（6）的节点 'e' 以启用共享。
+8. 在步骤（8）中，服务器接收来自第一个聊天会话的新消息。它淘汰来自第二个聊天会话的所有节点（节点 "g" 和 "h"），因为它们是最近最少使用的。
+9. 在步骤（9）中，服务器接收一个请求，要求为（8）中的节点 "j" 中的问题采样更多答案，可能是为了自一致性提示。为了为这些请求腾出空间，我们淘汰（8）中的节点 "i"、"k" 和 "l"。
+    
+# 11 参考链接
 - [参考链接](https://towardsdatascience.com/attn-illustrated-attention-5ec4ad276ee3)
 - [书籍 + 代码](https://zh-v2.d2l.ai/chapter_attention-mechanisms/attention-scoring-functions.html)
 - [read paper](https://readpaper.com/paper/2963403868)
 - [attention-2](https://blog.csdn.net/qq_27590277/article/details/136181185)
 - [attention-3](https://blog.csdn.net/CV_Autobot/article/details/140482730)
+- [sglang 博客](https://lmsys.org/blog/2024-01-17-sglang/)
