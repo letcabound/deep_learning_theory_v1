@@ -378,7 +378,7 @@ $$\Theta(N^2d^2M^{-1})$$
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在连续批处理(contiguous batching)设置中，我们不能淘汰当前正在运行的批处理中使用的节点。因此，每个节点维护一个引用计数器，指示有多少个正在运行的请求正在使用它。如果一个节点的引用计数器为零，则该节点可以被淘汰。注意，我们不预先分配一个固定大小的内存池作为缓存。相反，我们让缓存的token和当前正在运行的请求共享同一个memory pool。因此，系统动态地分配内存用于缓存和运行请求。当足够多的等待请求运行时，系统将淘汰所有缓存的token，以便更大的batch size。下图显示了如何为多个传入请求维护 radix tree。前端解释器将完整的提示发送到runtime，runtime 运行前缀匹配和重用。树结构存储在 CPU 上，维护开销可以忽略不计。前端首先发送前缀作为提示，确保前缀正确插入树中。然后发送剩余的提示。这种“前端提示”简化了运行时调度和匹配，体现了前端-运行时协同设计的好处。这种设计使得系统能够高效地利用内存，减少缓存的开销，并提高系统的性能和效率。<br>
 
-- [RadixAttention operations with an LRU eviction policy](https://lmsys.org/images/blog/sglang/radix_attn.jpg)
+![RadixAttention operations with an LRU eviction policy](https://lmsys.org/images/blog/sglang/radix_attn.jpg)
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RadixAttention 操作示例，采用 LRU 淘汰策略，跨九个时间点进行演示。该图展示了基数树在响应各种请求时的动态演变。这些请求包括两个聊天会话、一个批量的少样本学习查询和一个自一致性采样。每个树边都带有一个标签，表示一个子字符串或令牌序列。节点根据其状态进行颜色编码：绿色表示新添加的节点，蓝色表示在当前时间点访问的缓存节点，红色表示已被淘汰的节点。<br>
 
