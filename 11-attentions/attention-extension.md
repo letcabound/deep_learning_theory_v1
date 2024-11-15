@@ -357,7 +357,7 @@ $$\Theta(N^2d^2M^{-1})$$
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PagedAttention是vLLM的核心技术，是我们的LLM推理和服务引擎背后的核心技术，支持各种高性能模型，并具有易于使用的接口。<br>
 
-# 12 RedisAttention
+# 12 RadixAttention
 - [sgLang](https://arxiv.org/abs/2312.07104)
 
 ## 12.1 当前KV Cache
