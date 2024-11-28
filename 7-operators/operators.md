@@ -144,6 +144,7 @@ def Batchnorm(x, gamma, beta, bn_param):
 **LN 简述** <br>
 - BN不适用于深度不固定的网络（如 RNN 中的sequence长度），而LayerNorm对深度网络的某一层的所有神经元进行标准化操作，非常适合用于序列化输入。<br>
 - LN一般只用于RNN的场景下，在CNN中LN规范化效果不如BN,GN,IN。
+- LN 再NLP中对最后一个维度求均值和方差，需注意的是可训练的weight 和 bias shape 等于最后一个维度，即一个embedding 的index 对应一个权重和bias.
 
 **BN 和 LN 的区别** <br>
 1. LN中同层神经元输入拥有相同的均值和方差，不同的输入样本有不同的均值和方差；
@@ -220,6 +221,8 @@ def Instancenorm(x, gamma, beta):
 ## 3.4  Group Normalization
 **原理** <br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;主要是针对Batch Normalization对小batchsize效果差，GN将channel方向分group，然后每个group内做归一化，算(C//G)*H*W的均值，这样与batchsize无关，不受其约束。<br>
+
+**GroupNorm永远不再Batch维度上做平均** <br>
 
 - [pytorch 实现](https://pytorch.org/docs/stable/generated/torch.nn.GroupNorm.html#torch.nn.GroupNorm)
 ```python
