@@ -30,7 +30,9 @@ $$net_{h1} = 0.1 \times 5 + 0.15 \times 10 + 0.35 \times 1 = 2.35 $$
 $$out_{h 1}=\frac{1}{1+e^{-net_{h1}}}=\frac{1}{1+e^{-2.35}}=0.912934$$
 
 - 同理可得：<br>
+
 $$out_{h2} = 0.979164$$
+
 $$out_{h3} = 0.995275$$
 
 ## 2.2 第二层计算
@@ -43,12 +45,15 @@ $$net_{o1}=w_{7} \times out_{h1} + w_{9} \times out_{h2} + w_{11} \times out_{h3
 $$net_{o1}=0.4 \times 0.912934+0.5 \times 0.979164+0.6 \times 0.995275=2.1019206$$
 
 - 分析性变换(激活函数)
+  
 $$out_{o1}=\frac{1}{1+e^{-net_{o1}}}=\frac{1}{1+e^{-2.1019206}}=0.891090$$
 
 - 同理可得：
+  
 $$out_{o2} = 0.904330$$
 
 - 总误差为：
+  
 $$E_{total}=E_{o1}+E_{o2}=\frac{1}{2}(0.01-0.891090)^{2}+\frac{1}{2}(0.99-0.904330)^{2}=0.391829$$
 
 # 3 反向传播过程(back propagation)
@@ -59,15 +64,22 @@ $$E_{total}=E_{o1}+E_{o2}=\frac{1}{2}(0.01-0.891090)^{2}+\frac{1}{2}(0.99-0.9043
 
 ## 3.1.1 计算流程概述
 - 前向过程为：
+- 
 $out_{h1}$ --> 线性连接 --> $net_{o1}$ --> 激活 --> $out_{o1}$ --> MSELoss --> $E_{total}$ <br>
+
 - 反向过程为：
+  
 $$\frac{\partial E_{total}}{\partial w_{7}} = \frac{\partial E_{total}}{\partial out_{o1}} \times \frac{\partial out_{o1}}{\partial net_{o1}} \times \frac{\partial net_{o1}}{\partial w_{7}}$$ 
+
 $$\frac{\partial E_{total}}{\partial w_{7}} = -(target - out_{o1}) \times out_{o1} \times (1-out_{o1}) \times out_{h1}$$ 
 
 ## 3.1.2 具体计算过程
 - 误差对 $out_{o1}$ 的梯度计算
+  
 $$E_{o1}=\frac{1}{2}(target_{o1}-out_{o1})^{2}$$
+
 $$E_{total}=E_{o1}+E_{o2}$$
+
 $$\frac{\partial E_{total}}{\partial out_{o1}}=2 \times \frac{1}{2}(target_{o1}-out_{o1})^{2-1} *-1+0=-(0.01-0.891090)=0.88109$$
 
 - 激活函数导数计算
