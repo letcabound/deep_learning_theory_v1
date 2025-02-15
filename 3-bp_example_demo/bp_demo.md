@@ -20,6 +20,7 @@
 ![example case](images/bp-example-figure2.jpg)
 
 - 线性变换 <br>
+
 $$net_{h 1}=w_{1} \times l_{1}+w_{2} \times l_{2}+b_{1} * 1$$
 
 $$net_{h1} = 0.1 \times 5 + 0.15 \times 10 + 0.35 \times 1 = 2.35 $$
@@ -35,8 +36,10 @@ $$out_{h3} = 0.995275$$
 ## 2.2 第二层计算
 ![example case](images/bp-example-figure4.jpg)
 
-- 线性变换
+- 线性变换<br>
+
 $$net_{o1}=w_{7} \times out_{h1} + w_{9} \times out_{h2} + w_{11} \times out_{h3} + b_{2} \times 1$$
+
 $$net_{o1}=0.4 \times 0.912934+0.5 \times 0.979164+0.6 \times 0.995275=2.1019206$$
 
 - 分析性变换(激活函数)
