@@ -65,7 +65,7 @@ $$E_{total}=E_{o1}+E_{o2}=\frac{1}{2}(0.01-0.891090)^{2}+\frac{1}{2}(0.99-0.9043
 ## 3.1.1 计算流程概述
 - 前向过程为：
   
-$out_{h1}$ --> 线性连接 --> $net_{o1}$ --> 激活 --> $out_{o1}$ --> MSELoss --> $E_{total}$ <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$out_{h1}$ --> 线性连接 --> $net_{o1}$ --> 激活 --> $out_{o1}$ --> MSELoss --> $E_{total}$ <br>
 
 - 反向过程为：
   
@@ -83,16 +83,23 @@ $$E_{total}=E_{o1}+E_{o2}$$
 $$\frac{\partial E_{total}}{\partial out_{o1}}=2 \times \frac{1}{2}(target_{o1}-out_{o1})^{2-1} *-1+0=-(0.01-0.891090)=0.88109$$
 
 - 激活函数导数计算
+
 $$out_{o1}=\frac{1}{1+e^{-net_{o1}}}$$
+
 $$out_{o1}^{\prime}=\frac{e^{-net}}{(1+e^{-net})^{2}} = \frac{1+e^{-net}-1}{(1+e^{-net})^{2}} = \frac{1}{1+e^{-net}}-\frac{1}{(1+e^{-net})^{2}} = out_{o1}(1-out_{o1})$$
+
 $$\frac{\partial out_{o1}}{\partial net_{o1}}=out_{o1}(1-out_{o1})=0.891090(0.01-0.891090)=0.097049$$
 
 - 线性项导数计算
+
 $$net_{o1}=w_{7} \times out_{h1}+w_{9} \times out_{h2}+w_{11} \times out_{h3}+b_{2} * 1$$
+
 $$\frac{\partial net_{o1}}{\partial w_{7}}=1 \times out_{h1} + 0 + 0 + 0=0.912934$$
 
 - 链式求导：
+
 $$\frac{\partial E_{total}}{\partial w_{7}} = 0.88109 * 0.097049 * 0.912934 = 0.078064$$
+
 
 - 同理可求得 $w_{8}、 w_{9}、 w_{10}、 w_{11}、 w_{12}$ 的梯度
 
@@ -101,13 +108,18 @@ $$\frac{\partial E_{total}}{\partial w_{7}} = 0.88109 * 0.097049 * 0.912934 = 0.
 ![example case](images/bp-example-figure6.jpg)
 
 - 核心公式
+
 $$\frac{\partial E_{total}}{\partial w_{1}} = \frac{\partial E_{total}}{\partial out_{h1}} \times \frac{\partial out_{h1}}{\partial net_{h1}} \times \frac{\partial net_{h1}}{\partial w_{1}} = (\frac{\partial E_{o1}}{\partial out_{h1}} + \frac{\partial E_{o2}}{\partial out_{h1}}) \times \frac{\partial out_{h1}}{\partial net_{h1}} \times \frac{\partial net_{h1}}{\partial w_{1}}$$
 
 - 其中：
+
 $$\frac{\partial E_{o1}}{\partial out_{h1}} = \frac{\partial E_{o1}}{\partial out_{o1}} \times \frac{\partial out_{o1}}{\partial net_{o1}} \times \frac{\partial net_{o1}}{\partial out_{h1}}=-(target_{o1} - out_{o1}) \times out_{o1} \times (1-out_{o1}) \times w_{7}$$ 
+
 $$\frac{\partial E_{o2}}{\partial out_{h1}} = \frac{\partial E_{o2}}{\partial out_{o2}} \times \frac{\partial out_{o2}}{\partial net_{o2}} \times \frac{\partial net_{o2}}{\partial out_{h1}}=-(target_{o2} - out_{o2}) \times out_{o2} \times (1-out_{o2}) \times w_{8}$$ 
 
+
 - 带入数据：
+
 $$\frac{\partial E_{o1}}{\partial out_{h1}} = -(0.01-0.891090) \times 0.891090 \times (1-0.891090) \times 0.360968=0.030866$$
 
 - 同理可求的 $\frac{\partial E_{o2}}{\partial out_{h1}}$, 于是可得到：
@@ -118,13 +130,19 @@ $$\frac{\partial E_{total}}{\partial w_{1}} = 0.011204$$
 
 # 4 权重更新
 - 更新 $w_{7}$:
+
 $$w_{7}^{+}=w_{7}+\Delta w_{7}=w_{7}-\eta \frac{\partial E_{total}}{\partial w_{7}}=0.4-0.5 * 0.078064=0.360968$$
 
 - 同理可得：
+
 $$w_{1}^{+} = 0.094534 \space\space\ w_{2}^{+} = 0.0139069 \space\space\ w_{3}^{+} = 0.198211$$
+
 $$w_{4}^{+} = 0.246422 \space\space\ w_{5}^{+} = 0.299497 \space\space\ w_{6}^{+} = 0.348993$$
+
 $$w_{7}^{+} = 0.360968 \space\space\ w_{8}^{+} = 0.453383 \space\space\ w_{9}^{+} = 0.458137$$
+
 $$w_{10}^{+} = 0.553629 \space\space\ w_{11}^{+} = 0.557448 \space\space\ w_{12}^{+} = 0.653688$$
+
 $$b_{1} = 0.35 \space\space\ b_{2} = 0.65 \space\space$$
 
 # 5 迭代训练
