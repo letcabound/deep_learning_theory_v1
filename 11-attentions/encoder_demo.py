@@ -76,6 +76,24 @@ def run_encoder_onnx():
 
     logger.info("Model output:", output)
     
+def onnx_shape_inference():
+    import onnx
+    from onnx import shape_inference
+
+    # 加载原始模型
+    model_path = "single_layer_bert_encoder.onnx"
+    model = onnx.load(model_path)
+
+    # 对模型进行形状推理
+    inferred_model = shape_inference.infer_shapes(model)
+
+    # 保存带有形状信息的模型（可选）
+    onnx.save(inferred_model, "single_layer_bert_encoder_with_shapes.onnx")
+
+    # 打印模型的计算图及形状信息
+    logger.info(onnx.helper.printable_graph(inferred_model.graph))
+    
 if __name__ == '__main__':
-    # export_encoder_onnx()
-    run_encoder_onnx()
+    export_encoder_onnx() # 导出模型
+    # run_encoder_onnx()
+    # onnx_shape_inference()
