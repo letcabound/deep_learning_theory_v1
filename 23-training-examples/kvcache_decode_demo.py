@@ -1,3 +1,15 @@
+'''
+1. QKV 三个linear 要用上；
+2. logits 没有归一化；
+3. label 也不太标准；
+4. 没用残差连接；
+5. 没用layernorm;
+6. relu 改为gelu;
+7. decoder 的层数增加(kv cache 多层)；
+8. dmodle 和 n_head 改变；
+9. 数据集增加；
+10. 问答类型的数据增加；
+'''
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -100,10 +112,12 @@ def generate_kv(prompt, max_len=50):
     with torch.no_grad():
         # 初始前向传播获取缓存
         initial_input = torch.tensor(input_ids).unsqueeze(1)
-        _, past_key_values = model(initial_input)
+        logits, past_key_values = model(initial_input)
         
         # 取最后一个token作为初始输入
-        next_id = input_ids[-1]
+        # next_id = input_ids[-1]
+        next_id = torch.argmax(logits[-1, 0]).item()
+        
         
         for _ in range(max_len):
             # 准备单步输入

@@ -28,6 +28,8 @@ class CausalMiniLlama(nn.Module):
         # 输出层
         self.lm_head = nn.Linear(d_model, vocab_size)
         
+        self.Q = nn.Linear(d_model, d_model)
+        
         # 缓存因果掩码（动态生成）
         self.causal_mask = None
 
@@ -125,7 +127,7 @@ def generate(prompt, max_len=50):
             
             # 只取最后一个位置的预测
             next_id = torch.argmax(logits[-1, 0]).item()
-            input_ids.append(next_id)
+            input_ids.append(next_id) # 追加到input里
             
             if next_id == eos_id:
                 break
