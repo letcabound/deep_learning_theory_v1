@@ -47,9 +47,7 @@ InstructGPT正是在这一背景下的产物。
 
 InstructGPT的调教过程主要有以下三个步骤：
 
-![图片](https://p3-juejin.byteimg.com/tos-cn-
-i-k3u1fbpfcp/659323d2ecb64deca7357a157e428c13~tplv-k3u1fbpfcp-jj-
-mark:3024:0:0:0:q75.awebp#?w=1080&h=627&s=234549&e=png&b=fcfcfc)
+![alt text](./images/image.png)
 
 **Step1：有监督微调（SFT）。** 在人工标注的prompts数据集上对预训练好的GPT-3进行微调。
 
@@ -67,9 +65,7 @@ InstructGPT的三个训练步骤分别对应**SFT数据集、RM数据集和PPO�
 
 三个数据集的大小如Table 6所示：
 
-![图片](https://p3-juejin.byteimg.com/tos-cn-
-i-k3u1fbpfcp/57f754df97da4269a6c413cecbd202ba~tplv-k3u1fbpfcp-jj-
-mark:3024:0:0:0:q75.awebp#?w=1080&h=290&s=44455&e=png)
+![alt text](./images/image-1.png)
 
 InstructGPT的训练数据主要来自以下两个途径：
 
@@ -84,9 +80,7 @@ API等候列表的使用案例，我们要求标注员提供与之相应的Promp
 Table 1中展示了RM数据集的类别分布，可以看到，**这些prompts非常多样化，包括生成、问答、对话、摘要、提取和其他自然语言任务。** Table
 2中展示了一些示例prompts。
 
-![图片](https://p3-juejin.byteimg.com/tos-cn-
-i-k3u1fbpfcp/8b8429f63a9e41519afed93d56ea6e96~tplv-k3u1fbpfcp-jj-
-mark:3024:0:0:0:q75.awebp#?w=1080&h=443&s=200706&e=png&b=fcfcfc)
+![alt text](./images/image-2.png)
 
 ## 模型结构及训练过程
 
@@ -100,24 +94,19 @@ mark:3024:0:0:0:q75.awebp#?w=1080&h=443&s=200706&e=png&b=fcfcfc)
 
 ### 奖励建模（Reward modeling，RM）
 
-把上一个步骤得到的SFT模型的最后一层unembedding
-ayer移除，训练一个模型，这个模型接收一个问题`prompt`和回答`response`，然后输出一个标量`reward`。
+把上一个步骤得到的SFT模型的最后一层unembedding layer移除，训练一个模型，这个模型接收一个问题`prompt`和回答`response`，然后输出一个标量`reward`。
 
 **RM的大小仅为6B，** 一方面是这样可以有效节省计算资源，另一方面是作者发现175B的RM在强化学习中作为值函数训练不太稳定。
 
 具体来说，**奖励模型的损失函数** 如下：
 
-![图片](https://p3-juejin.byteimg.com/tos-cn-
-i-k3u1fbpfcp/44681708463a43a7997a9e29d0da0bf1~tplv-k3u1fbpfcp-jj-
-mark:3024:0:0:0:q75.awebp#?w=1080&h=122&s=15294&e=png)
+![alt text](./images/image-3.png)
 
-其中，rθ(x,y)奖励模型对于prompt x和回答y的输出标量值，θ是参数。D是比较数据集。yw是比yl排序位置更高的response，所以希望
-rθ(x,yw)与rθ(x,yl)的差值尽可能大。
+其中，$r_{θ}(x,y)$ 奖励模型对于prompt x和回答y的输出标量值，θ是参数。D是比较数据集。$y_w$ 是比 $y_l$ 排序位置更高的response，所以希望 $r_θ(x,y_w)$ 与 $r_θ(x,y_l)$ 的差值尽可能大。
 
 ### 强化学习（Reinforcement learning，RL）
 
-**使用`PPO算法`对第一阶段训练的SFT模型进行微调。** 该模型接收一个问题prompt
-x，并生成一个回应y，将x和y输入到之前训练的奖励模型中，得到一个奖励分数，然后使用梯度下降法来更新模型策略。
+**使用`PPO算法`对第一阶段训练的SFT模型进行微调。** 该模型接收一个问题prompt x，并生成一个回应y，将x和y输入到之前训练的奖励模型中，得到一个奖励分数，然后使用梯度下降法来更新模型策略。
 
 此外，为了减轻奖励模型的过拟合问题，作者还在每个token上添加了来自**SFT模型的KL散度惩罚项** 。
 
@@ -125,11 +114,9 @@ x，并生成一个回应y，将x和y输入到之前训练的奖励模型中，�
 
 在强化学习训练中，作者致力于最大化以下目标函数：
 
-![图片](https://p3-juejin.byteimg.com/tos-cn-
-i-k3u1fbpfcp/f4c4660dc7ec44b4b3b56bd49424f4ad~tplv-k3u1fbpfcp-jj-
-mark:3024:0:0:0:q75.awebp#?w=1080&h=157&s=19048&e=png)
+![alt text](./images/image-4.png)
 
-其中，πθRL是学习到的强化学习策略。πSFT是第一阶段有监督训练的SFT模型。Dpretrain是预训练分布。KL奖励系数β和预训练损失系数γ分别控制了KL惩罚和预训练梯度的强度。
+其中，$π^{RL}_{Φ}$ 是学习到的强化学习策略。$π^{SFT}$ 是第一阶段有监督训练的SFT模型。$D_{pretrain}$是预训练分布。KL奖励系数β和预训练损失系数γ分别控制了KL惩罚和`预训练梯度`的强度。
 
 **第二项目标函数中包含一个KL散度惩罚项** ，这是因为在训练奖励模型时，y数据来自于SFT模型。然而在进行推理任务时，y数据来自于新的强化学习策略模型。
 
@@ -145,9 +132,7 @@ mark:3024:0:0:0:q75.awebp#?w=1080&h=157&s=19048&e=png)
 Figure 3展示了各种模型在OpenAI
 API提交的数据集上的人类评估结果。评估标准是衡量每个模型输出相对于拥有1750亿参数的SFT模型更受欢迎的频率。
 
-![图片](https://p3-juejin.byteimg.com/tos-cn-
-i-k3u1fbpfcp/35ea551f2ff74c8f885cee48666385e6~tplv-k3u1fbpfcp-jj-
-mark:3024:0:0:0:q75.awebp#?w=946&h=896&s=134583&e=png&b=ffffff)
+![alt text](./images/image-5.png)
 
 InstructGPT模型（`PPO-
 ptx`）以及其未进行预训练梯度混合的变体（`PPO`）在这个评估中表现出明显的优势，超越了GPT-3的基准模型（`GPT`、`GPT
@@ -155,9 +140,7 @@ prompted`）。从图中可以发现，**经过新的数据集微调和强化学
 
 当使用不同来源的数据集进行测试时，Instruct GPT都表现了相同的优势。具体见Figure 4。
 
-![图片](https://p3-juejin.byteimg.com/tos-cn-
-i-k3u1fbpfcp/8a98189f450f48e09a3f4b75b5b56787~tplv-k3u1fbpfcp-jj-
-mark:3024:0:0:0:q75.awebp#?w=1080&h=517&s=222330&e=png&b=fbfbfb)
+![alt text](./images/image-6.png)
 
 **InstructGPT模型在未经过RLHF微调的指令上展现了出色的泛化能力，尤其是在处理非英语语言和代码相关指令时。**
 值得一提的是，即使这些非英语语言和代码只占据了我们微调数据的一小部分。
@@ -173,9 +156,7 @@ mark:3024:0:0:0:q75.awebp#?w=1080&h=517&s=222330&e=png&b=fbfbfb)
 
 Figure 9呈现了这些行为的一些示例。
 
-![图片](https://p3-juejin.byteimg.com/tos-cn-
-i-k3u1fbpfcp/81ffdcf875bc47899a1318f1040ad601~tplv-k3u1fbpfcp-jj-
-mark:3024:0:0:0:q75.awebp#?w=969&h=889&s=588249&e=png&b=fdfdfd)
+![alt text](./images/image-7.png)
 
 对于行为1，作者认为其发生的原因是**训练集中很少包含错误前提的prompts** ，导致模型在这些情况下的泛化能力较弱。
 
@@ -190,7 +171,6 @@ ChatGPT是InstructGPT的姊妹模型，**两者在技术路线的使用上完全
 
 # 2 GPT3.5
 
-
 | 英文 | 中文 | 释义 |
 | :--: | :--: | :--: |
 | Emergent Ability | 突现能力 | 小模型没有，只在模型大到一定程度才会出现的能力 |
@@ -203,6 +183,7 @@ ChatGPT是InstructGPT的姊妹模型，**两者在技术路线的使用上完全
 | Scaling Laws | 缩放法则 | 模型的效果的线性增长要求模型的大小指数增长 |
 | Alignment | 与人类对齐 | 让机器生成复合人类期望的，复合人类价值观的句子 |
 
+# 3 GPT4
 
 
 
