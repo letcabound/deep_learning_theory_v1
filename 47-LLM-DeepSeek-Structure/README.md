@@ -13,7 +13,7 @@
 **DeepSeek-V3** <br>
 
 - [论文链接-EN](https://arxiv.org/pdf/2412.19437)
-- [论文链接-CN](https://yiyibooks.cn/arxiv/2412.19437v1/index.html)
+- [论文链接-CN](https://yiyibooks.cn/arxiv/2412.19437v2/index.html)
 
 **DeepSeek-R1** <br>
 
@@ -343,3 +343,28 @@ DualPipe的关键思想是重叠一对单独的前向和后向块中的计算和
 为了确保 DualPipe 具有足够的计算性能，我们定制了高效的跨节点全对全通信内核（包括调度和组合），以节省专用于通信的 SM 数量。 内核的实现与 MoE 门控算法和我们集群的网络拓扑结构共同设计。 具体来说，在我们的集群中，跨节点 GPU 通过 IB 完全互连，节点内通信通过 NVLink 处理。 NVLink 提供 160 GB/s 的带宽，大约是 IB (50 GB/s) 的 3.2 倍。 为了有效利用 IB 和 NVLink 的不同带宽，我们将每个符元最多调度到 4 个节点，从而减少 IB 通信量。 对于每个符元，在其路由决策做出后，它将首先通过 IB 传输到目标节点上具有相同节点内索引的 GPU。 一旦到达目标节点，我们将努力确保它通过 NVLink 即时转发到承载其目标专家的特定 GPU，而不会被随后到达的符元阻塞。 通过这种方式，通过 IB 和 NVLink 的通信完全重叠，每个符元可以有效地选择每个节点平均 3.2 个专家，而不会产生 NVLink 的额外开销。 这意味着，尽管 DeepSeek-V3 在实践中只选择 8 个路由专家，但它可以将此数量最多扩展到 13 个专家（4 个节点× 3.2 个专家/节点），同时保持相同的通信成本。 总体而言，在这种通信策略下，只需要 20 个 SM 就能充分利用 IB 和 NVLink 的带宽。
 
 详细地说，我们采用 warp 专业化技术 (Bauer et al., 2014) 并将 20 个 SM 分成 10 个通信通道。 在调度过程中，(1) IB 发送，(2) IB 到 NVLink 转发，以及 (3) NVLink 接收分别由各自的 warp 处理。 分配给每个通信任务的 warp 数会根据所有 SM 上的实际工作负载动态调整。 同样，在合并过程中，(1) NVLink 发送，(2) NVLink 到 IB 的转发和累积，以及 (3) IB 接收和累积也由动态调整的 warp 处理。 此外，调度和合并内核都与计算流重叠，因此我们也考虑它们对其他 SM 计算内核的影响。 具体来说，我们采用定制的 PTX（并行线程执行）指令并自动调整通信块大小，这显著减少了 L2 缓存的使用以及对其他 SM 的干扰。
+
+# 12 附录：DeepSeekV1
+
+DeepSeek V1是2024年1月份发布的第一版DeepSeek模型，包含DeepSeek的核心构建方式，核心技术点分为数据端、模型端、优化端、对齐4个部分，前面3个部分处于模型的预训练阶段，对齐阶段使用SFT进行人类风格对齐。
+
+数据端：在数据的处理上，包括去重、过滤、混合3个步骤，目的是构建一个多样性强、纯净的高质量预训练数据。在去重阶段，对于Common Crawl数据集进行全局的去重过滤，可以提升去重比例。在过滤阶段，构建了一套详细的包括文法语法分析在内的评估流程，去除低质量数据。在混合阶段，对不同domain的数据进行采样，平衡不同domain数据量，让数据量较少的domain也能有足够的样本占比，提升数据集多样性和全面性。
+
+此外，在数据处理方面，使用Byte-level Byte-Pair Encoding (BBPE)作为tokenizer，相比BPE是在字符粒度进行字符串分割，BBPE在字节粒度进行处理，整体算法逻辑和BPE类似。
+
+整体参与预训练的token数量为2 trillion。在V2和V3中，训练的token数量不断上升，V2为8 trillion，V3为14 trillion。
+
+**模型端：**<br>
+模型的主体结构基本沿用LLaMA。LLaMA主体就是Transformer结构，主要差异包括RMSNorm的Pre-normalization（每层Transformer输入使用RMSNorm进行归一化）、激活函数采用SwiGLU、位置编码采用Rotary Embeddings。模型包括7B和67B两种尺寸，67B尺寸的Transformer中的attention采用了Grouped Query Attention代替最普通的self-attention降低inference开销。Grouped Query Attention每组query共用同一组key和value。
+
+**优化端：**<br>
+使用multi-step learning rate代替LLaMA中的cosine learning rate schedule，主要原因是实验发现两者虽然最终收敛到的loss差不多，但是前者在连续学习上loss能够保证一致性，连续学习更加方便。先用2000个step的warmup将学习率提升到最大值，然后在训练完80%的训练数据后将学习率降低到31.6%，在训练完90%的训练数据后进一步降低到10%。
+
+**对齐：**<br>
+使用Supervised Fine-Tuning、DPO两种方式进行预训练模型的finetune，进行风格对齐。Supervised Fine-Tuning使用120w搜集到的SFT数据（一些根据指令给出答案的文本，由人类标注的高质量数据，帮助预训练模型迁移人类风格）进行finetune。DPO是针对之前ChatGPT中基于强化学习的RHLF风格迁移的一种升级，不用强化学习，只使用一个指定对应的两个答案之前的相对偏好关系作为损失函数加入到模型中。
+
+>DPO：直接基于人类偏好数据优化模型，无需奖励模型。通过对比学习最大化偏好回答的对数似然概率，使用二元交叉熵损失函数实现4810。依赖成对偏好数据（如用户选择的优/劣回答），直接调整模型参数以符合偏好分布.<br>
+>DPO：流程简化，直接监督学习：
+> - 收集偏好数据；<br>
+>- 直接优化模型参数，无需强化学习循环81011。
+

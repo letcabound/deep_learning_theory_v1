@@ -1,3 +1,21 @@
+# 0 gpt3之前NLP领域的训练范式
+
+NLP自发展以来，先后经历了4种任务处理范式
+
+**第一种范式**，非神经网络时代的完全监督学习(Fully Supervised Learning, Non-Neural Network)
+具体而言，即手工设计一系列特征模板，来输入模型。模型对任务的处理结果高度依赖于特征模板的设计，同时也高度依赖领域专家的知识。举个例子，比如对于条件随机场CRF模型，业界甚至有一个专门的库CRF++帮助自动生成大量的随机模板然后输入模型进行训练，从而避免对领域专家的过度依赖. <br>
+
+**第二范式**，基于神经网络的完全监督学习(Fully Supervised Learning, Neural Network)
+神经网络学派开始流行以后，处理范式基本基本是预训练后的词嵌入表征 + 模型架构的调整，在这个时期，一方面的工作在词嵌入上，比如NNLM/CBOW/SKIP/GRAM/GLOVE/ELMO等，另一方面的工作则在模型架构上，比如BI-LSTM/SEQ2SEQ架构在神经机器翻译领域NMT的应用等. <br>
+
+**第三范式**，预训练-微调范式 (Pre-train、Fine-tune)
+相比于第二范式而言，第三范式的优点在于更进一步减少了人工的参与，不再需要对于每个任务采取不同的模型架构，而是在超大的文本数据集上预训练一个具备泛化能力的通用的模型，然后再根据下游任务本身的特点对模型进行针对性的微调即可，使得一个模型解决多种任务成为可能，比如GPT1模型.<br>
+
+**第四范式**，预训练、提示、预测范式(Pre-train、Prompt、Predict)
+在这个过程我们往往不对预训练语言模型改动太多，我们希望是通过对合适prompt的利用将下游任务建模的方式重新定义，这则是GPT2、GPT3的特点. <br>
+
+> 往后该如何发展呢？ 还有更进一步的训练范式吗？
+
 # 1. InstructGPT论文精读：大模型调教之道
 
 - [论文链接](https://arxiv.org/pdf/2203.02155.pdf)
@@ -169,7 +187,41 @@ Figure 9呈现了这些行为的一些示例。
 
 ChatGPT是InstructGPT的姊妹模型，**两者在技术路线的使用上完全一致**。本文详细总结了InstructGPT的技术原理，深度解析了OpenAI对大模型的调教之道。
 
-# 2 GPT3.5
+# 2 从 GPT3 到 GPT3.5
+
+据OpenAI官网对GPT3.5的介绍，GPT3.5从2021年第四季度开始就混合使用文本和代码进行训练，我们来看下GPT3.5的各个系列模型及其各自的发展演变脉络图. <br>
+
+## 2.1 GPT3 + 代码训练 = Codex
+2020 年5-6月，OpenAI先后发布了GPT3的论文《Language Models are Few-Shot Learners》。GPT-3的最大规模的版本——175B(1750亿参数)大小的API Davinci(有着2048个词的上下文窗口)，此时的GPT3还只能写一些简单的代码和做一些简单的数学题。
+
+2021 年7月，OpenAI发布Codex的论文《Evaluating Large Language Models Trained on Code》，其中初始的Codex是根据120亿参数的GPT-3变体进行微调的，且通过对159GB的Python代码进行代码训练。后来这个120 亿参数的模型演变成OpenAI API中的code-cushman-001，具备较强的代码/推理能力。
+
+代码能力好理解，通过大量的代码训练，但其推理能力是如何获取到的呢，其中关键在于很多代码是为了解决数学推理问题，训练中可以用『类似后续22年年初Google一些研究者定义的CoT技术』获取推理能力，当然，此时文本上的能力尚且偏弱。
+
+## 2.2 GPT3 + 指令学习 + RLHF = instructGPT
+上文第一部分已经提到过，根据OpenAI的这篇论文《Learning to summarize with human feedback (Stiennon et al., 2020)》可知，2020年OpenAI便在研究GPT3与RLHF的结合了，但此时还是会经常一本正经的胡说八道，且很容易输出负面甚至带有危害的内容(毕竟人类言论中存在不少不友好的言论). <br>
+
+在OpenAI于2021年彻底加强Codex之后，终于有时间解决模型与人类对话的问题了，于是在2022年3月，OpenAI发布遵循人类指令学习的论文(指令学习可以认为就是指令微调instruct tuning)：Training language models to follow instructions with human feedback，这就是instructGPT，且把RLHF用得更好了
+其核心API就是instruct-davinci-beta和text-davinci-001(当然，文本上的能力不错但代码/推理上的能力偏弱).
+
+## 2.3 指令微调
+深度学习中指令调优的主要作用是提升大语言模型（LLMs）的性能和可控性‌。指令调优通过有监督的方式在由（指令，输出）对组成的数据集上进一步训练大语言模型，旨在缩小LLMs的下一个标记预测目标与用户期望LLMs遵循人类指令的目标之间的差距‌。
+
+**指令调优的具体作用**
+1.‌ 提升模型性能‌：指令调优通过对模型进行微调，使其能够更好地理解并执行自然语言指令，从而提高模型的准确性和任务完成能力‌。<br>
+‌2. 增强可控性‌：通过明确的指令数据集，模型可以学会根据指令调整输出，使得模型的输出更加符合用户的期望和需求‌。<br>
+‌3. 提高零样本能力‌：经过指令调优的模型在新任务上的零样本学习能力显著增强，能够更好地理解和完成未见过的任务‌。<br>
+
+**指令调优的实现过程**
+指令调优的过程包括以下几个步骤：
+
+‌准备指令数据‌：指令数据由指令、输入和输出三部分组成。指令是任务描述，输入是任务所需的输入内容，输出是任务的期望结果‌。
+
+‌数据来源‌：指令数据可以通过人工构造、机器生成或利用现有数据集转化而来‌。
+
+‌模型训练‌：在准备好的指令数据集上对LLMs进行微调，使其学会根据指令调整输出‌.
+
+## 2.4 GPT3.5 功能总结
 
 | 英文 | 中文 | 释义 |
 | :--: | :--: | :--: |
@@ -183,8 +235,99 @@ ChatGPT是InstructGPT的姊妹模型，**两者在技术路线的使用上完全
 | Scaling Laws | 缩放法则 | 模型的效果的线性增长要求模型的大小指数增长 |
 | Alignment | 与人类对齐 | 让机器生成复合人类期望的，复合人类价值观的句子 |
 
-# 3 GPT4
+# 3 从GPT3.5 到 ChatGPT
 
+![alt text](image.png)
+
+
+## 3.1 融合代码/推理与理解人类的能力
+
+2022年4月至7月，OpenAI开始对code-davinci-002(有着8192个token的上下文窗口)模型进行Beta测试(一开始也称其为Codex，当配备完善的**思维链**时，其在GSM8K等数学测试数据上的表现十分优异)
+
+2022 年5-6月发布的text-davinci-002是一个基于code-davinci-002的有监督指令微调(即在code-davinci-002基础上加入supervised instruction tuning) 模型在text-davinci-002上面进行指令微调很可能降低了模型的上下文学习能力，但是增强了模型的零样本能力(更懂人类)
+
+## 3.2 进一步理解人类
+**text-davinci-002 + RLHF = text-davinci-003/ChatGPT**
+
+text-davinci-003、ChatGPT都是基于text-davinci-002基础上改进的`基于人类反馈的强化学习的指令微调模型 (instruction tuning with reinforcement learning from human feedback)` text-davinci-003恢复了一些在text-davinci-002中丢失的部分上下文学习能力(比如在微调的时候混入了语言建模) 并进一步改进了零样本能力(得益于RLHF，生成更加符合人类期待的反馈或者说模型与人类对齐)
+
+至于ChatGPT则更不用说了，其初版对应的API为gpt-3.5-turbo(由23年3.2日OpenAI最新发布) 代码/推理能力强大，考虑到Codex学习了大量的开源代码，由此是不也能理解为何ChatGPT具备那么强大的编码及debug能力了，且训练代码中包含不少解决数学问题的代码，加上对代码注释的学习(基于一些代码和代码描述的样式/范例使用类似CoT这样的技术学习)，是不是也就能学会代码背后的推理能力呢?而且理解人类的能力前所未有.
+
+## 3.3 InstructGPT 和 ChatGPT 的区别
+ChatGPT的训练流程与InstructGPT是一致的，差异只在于：
+
+- InstructGPT(有1.3B 6B 175B参数的版本，这个细节你马上会再看到的)，是在GPT-3(原始的GPT3有1.3B 2.7B 6.7B 13B 175B等8个参数大小的版本)上做Fine-Tune.
+
+- 22年11月份的初版ChatGPT是在GPT-3.5上做Fine-Tune.
+
+![alt text](image-1.png)
+
+# 4 GPT4的ChatGPT改进版：新增多模态技术能力
+
+23年3月14日(国内3.15凌晨)，OpenAI正式对外发布自从22年8月份便开始训练的GPT4，之前订阅ChatGPT plus版的可以直接体验GPT4.
+
+## 4.1 GPT4 特点
+1. gpt-4 has a context length of 8,192 tokens. We are also providing limited access to our 32,768–context (about 50 pages of text，约25000个字) version.
+
+2. GPT-4经过预训练之后，再通过RLHF的方法微调:对于某些特定任务，The GPT-4 base model is only slightly better at this task than GPT-3.5; however, after RLHF post-training we observe large improvements over GPT-3.5。
+
+3. RLHF之外，为了进一步让模型输出安全的回答，过程中还提出了基于规则的奖励模型RBRMs(rule-based reward models)，奖励规则由人编写RBRMs相当于是零样本下GPT-4的决策依据或者分类器. 这些分类器在RLHF微调期间为GPT-4策略模型提供了额外的奖励信号，以生成正确回答为目标，从而拒绝生成有害内容，说白了，额外增加RBRMs就是为了让模型的输出更安全(且合理拒答的同时避免误杀，比如下面第二个图所示的例子：寻找cigarettes)
+
+4. 经过测试，GPT4在遵循人类指令上表现的更好(同样指令下，输出更符合人类预期的回答)，且在常识性推理、解题等多项任务上的表现均超过GPT3和对应的SOTA.
+
+5. 具备了多模态的能力，可以接受图片形式的输入(图片输入接口暂未开放)，并按指令读图.
+
+## 4.2 训练不同点？
+其训练方式和基于GPT3的instructGPT或基于GPT3.5的ChatGPT初版的训练方式如出一辙：<br>
+
+> 先收集数据
+
+> 1. 一部分是人工标注问题-答案对：We collect demonstration data (given an input, demonstrating how the model should respond)
+> 2. 一部分是基于人类偏好对模型输出的多个答案进行排序的数据：ranking data on outputs from our models (given an input and several outputs, rank the outputs from best to worst) from human trainers
+接下来三个步骤(具体下文第三部分详述)
+
+> 通过人工标注的数据(问题-答案对)监督微调GPT4
+> 1. We use the demonstration data to finetune GPT-4 using supervised learning (SFT) to imitate the behavior in the demonstrations.
+通过对模型多个回答进行人工排序的数据训练一个奖励模型，这个奖励模型相当于是模型输出好坏的裁判
+> 2. We use the ranking data to train a reward model (RM), which predicts the average labeler’s preference for a given output
+> 3. 通过最大化奖励函数的目标下，通过PPO算法继续微调GPT4模型
+and use this signal as a reward to fine-tune the GPT-4 SFT model using reinforcement learning (specifically, the PPO algorithm)
+
+# 5 GPT 系列继续发展
+
+## 5.1. GPT-4o（全能多模态模型）
+- 核心能力：支持文本、图像、音频的多模态输入和输出，具备实时交互能力（响应速度接近人类对话），优化了非英语语言支持246。
+- 适用场景：多模态内容生成（如实时翻译、图像分析）、快速对话交互、轻量级编程辅助26。
+- 性能与成本：API调用速度比GPT-4 Turbo快2倍，价格便宜50%（输入2.5美元/百万token），免费用户有限额2612。
+
+## 5.2. GPT-4.5（大规模通用模型）
+- 核心能力：OpenAI迄今最大的模型，知识库更广，幻觉率更低（37.1% vs GPT-4的61.8%），情商和自然对话能力提升，但非前沿模型。
+- 适用场景：写作优化、客户服务、内容生成等需自然交互的通用任务，不支持多模态语音/视频功能。
+- 性能与成本：计算效率比GPT-4提升10倍，但API价格极高（输入75美元/百万token，是GPT-4o的30倍），仅限付费用户使用。
+
+## 5.3. o1系列（深度推理模型）
+**o1-preview：**
+- 核心能力：专攻复杂逻辑推理（如数学证明、代码调试），采用思维链（Chain-of-Thought）方法分解问题，性能接近人类博士水平4914。
+- 适用场景：科研分析、策略制定、高精度编程任务414。
+- 性能与成本：API价格较高（具体未公开），适用于高需求场景914。
+
+**o3-mini：** <br>
+- 核心能力：o1的轻量版，推理速度更快，成本更低，但精度稍弱69。
+- 适用场景：日常代码审查、基础数据分析614。
+
+## 5.4. o3系列（推理优化版）
+- 核心能力：o1的升级版，在复杂问题解决（如ARC-AGI基准测试）中表现更优，适应性和逻辑推理能力更强14。
+- 性能对比：在OpenAI内部测试中，o3得分显著高于o1和GPT-4o，尤其在处理新颖问题时更具优势14。
+- 定位：专为高难度推理任务设计，可能替代o1成为企业级解决方案14。
+
+# 5.5 如何选择
+
+| 需求 | 模型 |
+| :--: | :--: |
+|多模态需求 | GPT-4o |
+| 低成本通用任务 | GPT-4o或o3-mini |
+| 专业推理 | o1或o3 |
+| 自然交互与知识广度 | GPT-4.5（需评估成本） |
 
 
 
