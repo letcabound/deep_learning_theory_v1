@@ -37,9 +37,11 @@ YaRN（另一种 RoPE 扩展方法）是一种旨在有效扩展使用旋转位�
 
 **DeepSeek-R1** 包含以下结构：
 
-DeepSeek-R1 由一个嵌入层、其后的 61 个变换器层以及输出阶段的多个预测头组成。
+DeepSeek-R1 由一个嵌入层、其后的 61 个transfomer decoder层以及输出阶段的多个预测头组成。
 
 DeepSeek-R1 在所有 Transformer 层上采用多头潜在注意力 (MLA) 层，而不是标准多头注意力。前三个 Transformer 层与其他层不同，使用标准前馈网络 (FFN) 层。从第 4 层到第 61 层，混合专家 (MoE) 层取代了 FFN 层。MLA 和 MoE 的细节将在以下部分中探讨。<br>
+
+这种分层设计融合了基础模型的稳定性和 MoE 架构的高效性，在保证推理能力的同时显著提升计算资源利用率。
 
 ![alt text](image.png)
 
