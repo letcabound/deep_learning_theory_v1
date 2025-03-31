@@ -348,7 +348,6 @@ This process is repeated, allowing the model to learn and improve over time.
 ```
 
 
-
 # 参考文档
 - [PPO: Proximal Policy Optimization](https://arxiv.org/abs/1707.06347)
 - [PPO-GRPO 公式详解](https://yugeten.github.io/posts/2025/01/ppogrpo/)
