@@ -147,7 +147,7 @@ def Batchnorm(x, gamma, beta, bn_param):
     eps = 1e-5
 
     x_mean = np.mean(x, axis=(0, 2, 3), keepdims=True)
-    x_var = np.var(x, axis=(0, 2, 3), keepdims=True0)
+    x_var = np.var(x, axis=(0, 2, 3), keepdims=True)
     x_normalized = (x - x_mean) / np.sqrt(x_var + eps)
     results = gamma * x_normalized + beta
 
