@@ -1,6 +1,6 @@
 # 1 pytorch 官网
 [![pytorch Official website](images/pytorch-figure2.jpg)](https://pytorch.org/)
-  
+
 # 2 pytorch 简介
 ## 2.1 认识pytorch
 - [nvidia- pytorch](https://www.nvidia.cn/glossary/data-science/pytorch/)
@@ -36,10 +36,13 @@ nvidia-smi
 
 - [cudnn download](https://developer.nvidia.com/rdp/cudnn-archive)
 
-# 5 GPU 
+# 5 cuda and driver compatible
+- [cuda and driver compatible](https://docs.nvidia.com/deploy/cuda-compatibility/index.html#binary-compatibility__table-toolkit-driver)
+
+# 5 GPU
 ## 5.1 GPU 加速原理
 ![H100 SM](images/pytorch-figure1.jpg)
 
-## 5.2 最先进的GPU
+## 5.2 先进GPU 白皮书
 - [H100](https://resources.nvidia.com/en-us-tensor-core)
 - [A100](https://www.nvidia.com/content/dam/en-zz/Solutions/Data-Center/HGX/a100-80gb-hgx-a100-datasheet-us-nvidia-1485640-r6-web.pdf)
