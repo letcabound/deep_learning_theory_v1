@@ -1,3 +1,8 @@
+# QA小结
+1. 模型的状态存储 state_dict() 包含什么：state_dict() 存储了模型的所有可训练参数，但是并不包含模型的网络结构、epoch、优化器状态等信息。
+2. torch.save()会存储什么：会将模型的结构和状态一起存储。该方法依赖模型定义路径，不可移植。
+3. 模型训练中断恢复训练：使用 checkpoint 自定义存储状态。参考：4.1节
+
 # 1 tensor 的保存和加载
 ```python
 def tensor_save():
@@ -48,8 +53,9 @@ class Net(nn.Module):
         return output
 ```
 
-## 2.2 保存模型的状态
+## 2.2 保存模型的状态(模型的所有可训练参数)
 ```python
+# state_dict()中，存储了模型的所有可训练参数，并不包含 模型结构、epoch和优化器状态信息。如果训练中断时要恢复训练，适合采用**checkpoint**方式来存储状态。
 def save_para_demo():
     model = Net()
     torch.save(model.state_dict(), "mnist_para.pth")
@@ -113,6 +119,7 @@ def save_ckpt_demo():
         'epoch': epoch,
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
+        'scheduler_state_dict': scheduler.state_dict(),  # 如果你用了 scheduler
         # 'loss': loss.item(),
         # 可以添加其他训练信息
     }
@@ -126,9 +133,11 @@ def load_ckpt_demo():
     checkpoint = torch.load('model.ckpt')
     model = Net() # 需要事先定义一个net的实例
     optimizer = optim.Adam(model.parameters(), lr=0.001)
+
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    epoch = checkpoint['epoch']
+    scheduler.load_state_dict(checkpoint['scheduler_state_dict'])  # 可选
+    start_epoch = checkpoint['epoch'] + 1
     loss = checkpoint['loss']
     input = torch.rand(1, 1, 28, 28)
     output = model(input)
